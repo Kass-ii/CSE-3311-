@@ -9,7 +9,7 @@
 
 ## Libraries
 - gtfs kit [repo](https://github.com/araichev/gtfs_kit)
-- GTFS - SQL tool [repo](https://github.com/BlinkTagInc/node-gtfs)
+- use buildDB.py to build GTFS DB
 
 
 ## GTFS
