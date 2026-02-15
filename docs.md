@@ -3,3 +3,5 @@
 	- and use the command `source .venv/bin/activate` to launch it
 	- use deactivate to stop it
 - gtfs kit [repo](https://github.com/araichev/gtfs_kit)
+- generate requirements.txt with `pip3 freeze > requirements.txt`
+- execute `main.py` in the venv with `.venv/bin/python -m main`
