@@ -9,8 +9,10 @@
 
 ## Libraries
 - gtfs kit [repo](https://github.com/araichev/gtfs_kit)
-- gtfsdb import tool [repo](https://github.com/OpenTransitTools/gtfsdb)
+- GTFS - SQL tool [repo](https://github.com/BlinkTagInc/node-gtfs)
+
 
 ## GTFS
 - DART GTFS [source](https://www.dart.org/about/about-dart/fixed-route-schedule)
+	- latest [url](https://www.dart.org/transitdata/latest/google_transit.zip)
 - GTFS [documentation](https://gtfs.org/documentation/schedule/reference/)

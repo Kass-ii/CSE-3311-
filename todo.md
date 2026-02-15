@@ -5,3 +5,5 @@
 	- start with first departure
 ## Medium
 - 
+## Misc
+- remove unneeded packages
