@@ -1,3 +1,5 @@
 - A virtual environment is recommended to manage dependencies, but not included in the repository. Create one with the command:
 	- `python3 -m venv .venv`
-	- and use the script `activateVenv.sh` to launch it
+	- and use the command `source .venv/bin/activate` to launch it
+	- use deactivate to stop it
+- gtfs kit [repo](https://github.com/araichev/gtfs_kit)
