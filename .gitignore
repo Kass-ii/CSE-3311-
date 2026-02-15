@@ -2,3 +2,4 @@ gtfs/*
 .venv
 .git
 __pycache__/
+*.sqlite

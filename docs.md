@@ -9,7 +9,7 @@
 
 ## Libraries
 - gtfs kit [repo](https://github.com/araichev/gtfs_kit)
-- use buildDB.py to build GTFS DB
+- use `buildDB.py` to build GTFS DB	
 
 
 ## GTFS
