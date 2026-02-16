@@ -22,9 +22,24 @@ class Router:
 		conn.close()
 
 		return rows
+	def queryDict(self, query, parameters=None):
+		databasePath = f"{os.getcwd()}/gtfs/gtfs.sqlite"
+		conn = sqlite3.connect(databasePath)
+		with conn:
+			conn.row_factory = sqlite3.Row
+			cur = conn.cursor()
+			if parameters == None:
+				cur.execute(query)
+			else:
+				cur.execute(query, parameters)
+			rows = cur.fetchall()	
+		
+
+		return rows
 	def getRoutesServingStop(self, stop_id = None):
 		if stop_id == None:
 			stop_id = self.userStop
+			
 		trips = f"""
 			SELECT DISTINCT r.route_id
 			FROM routes r
@@ -42,8 +57,7 @@ class Router:
 		Where timeStamp is a string fromated "HH:MM:SS"
 		"""
 		if timeStamp == None:
-			now = datetime.datetime.now()
-			timeStamp = now.strftime("%H:%M:%S")
+			timeStamp = datetime.datetime.now().strftime("%H:%M:%S")
 		if stop_id==None:
 			stop_id = self.userStop
 
@@ -57,20 +71,46 @@ class Router:
 		rows=self.query(query, [stop_id, timeStamp, N])
 		
 		return rows
+	
+	def getNDeparturesPerLinePerDirection(self, N, stop_id=None, timeStamp=None):
+		"""
+		Fetches the next N departures from stop_id, after timeStamp
+		Where timeStamp is a string fromated "HH:MM:SS"
+		"""
+		if timeStamp == None:
+			timeStamp = datetime.datetime.now().strftime("%H:%M:%S")
+		if stop_id==None:
+			stop_id = self.userStop
+		routes = self.getRoutesServingStop()
+		rows = []
+		for route in routes:
+			# number of directions for DART GTFS does not exceed 0/1, cannot assume for other agencies
+			for direction in (0,1):
+				query = """
+				SELECT st.trip_id, st.arrival_time, st.departure_time, t.route_id, t.direction_id, r.route_short_name
+				FROM stop_times AS st, trips AS t, routes AS r
+				WHERE st.stop_id == ? AND st.departure_time > ?  AND t.trip_id == st.trip_id AND t.route_id == ? AND t.route_id == r.route_id AND t.direction_id == ?
+				limit ?
+				"""
+				rows.append(self.queryDict(query, [stop_id, timeStamp, route, direction, N]))
+		return rows
+		
 
 	def findOutAndBack(self, deadline, startTime=None, stop_id=None):
 		""""
 		Method name pending
 		"""
-		departures = getNDepartures(3, stop_id, startTime)
+		departures = getNDeparturesPerLine(3, stop_id, startTime)
 
-		#if departures[0]
-
+		if departures[0][2] >= deadline:
+			# need to develop better heurestic
+			return
+		
+		
 if __name__ == "__main__":
 	#print(gk.list_feed(f"{os.getcwd()}/gtfs/DART.zip"))
 	router = Router()
 	
-	for depart in router.getRoutesServingStop():
-		print(depart)
-	for depart in router.getNDepartures(5):
-		print(depart)
+	for line in router.getNDeparturesPerLine(4):
+		for departure in line:
+			print(' | '.join(departure))
