@@ -82,12 +82,15 @@ class Router:
 	def findOutAndBack(self, deadline, startTime=None, stop_id=None):
 		""""
 		Method name pending
+		Algorithm to find max station loop time
 		"""
-		departures = getNDeparturesPerLine(3, stop_id, startTime)
-
-		if departures[0][2] >= deadline:
-			# need to develop better heurestic
-			return
+		
+		departures = getNDeparturesPerLinePerDirection(1, stop_id, startTime)
+		
+		for option in departures:
+			timeRemaining = deadline - strToDate(option[departure_time])
+			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)	
+		
 		
 		
 if __name__ == "__main__":
