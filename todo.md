@@ -7,3 +7,5 @@
 - 
 ## Misc
 - remove unneeded packages
+- convert tuple queries to dict queries
+- mix of object and string datetimes, need to standardize on objects
