@@ -3,3 +3,4 @@ gtfs/*
 .git
 __pycache__/
 *.sqlite
+.mypy_cache
