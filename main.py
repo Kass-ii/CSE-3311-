@@ -83,14 +83,37 @@ class Router:
 		""""
 		Method name pending
 		Algorithm to find max station loop time
+		Currently only supports same line navigation, !!does not support interlining!! 
 		"""
 		
 		departures = getNDeparturesPerLinePerDirection(1, stop_id, startTime)
 		
 		for option in departures:
-			timeRemaining = deadline - strToDate(option[departure_time])
-			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)	
-		
+			outdoorTime = deadline - strToDate(option["departure_time"])
+			indoorTime = 0
+			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)
+
+			for turnaround in nextStops:
+				returnTrips = self.getNDeparturesPerLinePerDirection(self,4,turnaround["arrival_time"])
+				selectedTrip = None
+				# find earliest return trip back along same line
+				for trip in returnTrips:
+					if (trip["route_id"] == option["route_id"]) and (trip["direction_id"] != option["direction_id"]):
+						# check if an earlier trip has already been found
+						if selectedTrip != None and trip["departure_time"] > selectedTrip["departure_time"]:
+							continue
+						elif selectedTrip != None and trip["departure_time"] < selectedTrip["departure_time"]:
+							selectedTrip = trip
+						elif selectedTrip == None:
+							selectedTrip = trip
+				returnStops = self.getNextNStops(trip["trip_id"], trip["stop_sequence"])
+
+				for stop in returnStops:
+					if stop["stop_id"] == stop_id:
+						if stop["arrival_time"] < deadline:
+							pass
+
+				
 		
 		
 if __name__ == "__main__":
