@@ -1,6 +1,6 @@
 ## Domain Concepts
 - router class
-- trip class
+- Trip class
 	- encapsulates trip directions
 	- need to serialize to send to front end
 - user class
@@ -13,3 +13,13 @@
 - trips
 - blocks
 - shapes
+- time
+
+## Relationships
+ - concept <relation> concept
+### GTFS relationships
+- trip <stop_times> stop, time
+- route <trips> trip, shape
+### App relationships
+- Router <generates> Trip
+- User <queries> Router
