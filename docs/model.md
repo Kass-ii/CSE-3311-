@@ -18,8 +18,11 @@
 ## Relationships
  - concept <relation> concept
 ### GTFS relationships
-- trip <stop_times> stop, time
-- route <trips> trip, shape
+- trip (1) <stop_times> (n : (1,2)) stop, time
+	- 1 trip has n stops, each stop has 2 times
+- route (1) <trips> (n,1?) trip, shape
+	- each route has n trips, all trips *should* have the same shape
+		- need to verify whether shapes are constant
 ### App relationships
-- Router <generates> Trip
-- User <queries> Router
+- Router (1) <generates> (n) Trip
+- User (n) <queries> (1) Router
