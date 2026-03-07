@@ -98,34 +98,32 @@ class Router:
 
 		# loop over immediate departures from origin
 		departures = getNDeparturesPerLinePerDirection(1, stop_id, startTime)
-		for option in departures:
-<<<<<<< Updated upstream
+		for option in departures:``
 			outdoorTime = deadline - strToDate(option["departure_time"])
 			indoorTime = 0
 			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)
+			"""" Old approach """
+			# for turnaround in nextStops:
+			# 	returnTrips = self.getNDeparturesPerLinePerDirection(self,4,turnaround["arrival_time"])
+			# 	selectedTrip = None
+			# 	# find earliest return trip back along same line
+			# 	for trip in returnTrips:
+			# 		if (trip["route_id"] == option["route_id"]) and (trip["direction_id"] != option["direction_id"]):
+			# 			# check if an earlier trip has already been found
+			# 			if selectedTrip != None and trip["departure_time"] > selectedTrip["departure_time"]:
+			# 				continue
+			# 			elif selectedTrip != None and trip["departure_time"] < selectedTrip["departure_time"]:
+			# 				selectedTrip = trip
+			# 			elif selectedTrip == None:
+			# 				selectedTrip = trip
+			# 	returnStops = self.getNextNStops(trip["trip_id"], trip["stop_sequence"])
 
-			for turnaround in nextStops:
-				returnTrips = self.getNDeparturesPerLinePerDirection(self,4,turnaround["arrival_time"])
-				selectedTrip = None
-				# find earliest return trip back along same line
-				for trip in returnTrips:
-					if (trip["route_id"] == option["route_id"]) and (trip["direction_id"] != option["direction_id"]):
-						# check if an earlier trip has already been found
-						if selectedTrip != None and trip["departure_time"] > selectedTrip["departure_time"]:
-							continue
-						elif selectedTrip != None and trip["departure_time"] < selectedTrip["departure_time"]:
-							selectedTrip = trip
-						elif selectedTrip == None:
-							selectedTrip = trip
-				returnStops = self.getNextNStops(trip["trip_id"], trip["stop_sequence"])
-
-				for stop in returnStops:
-					if stop["stop_id"] == stop_id:
-						if stop["arrival_time"] < deadline:
-							pass
+			# 	for stop in returnStops:
+			# 		if stop["stop_id"] == stop_id:
+			# 			if stop["arrival_time"] < deadline:
+			# 				pass
 
 				
-=======
 			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)	
 			
 			maxPivot = None
@@ -136,7 +134,6 @@ class Router:
 					maxPivot = pivot
 				else:
 					break
->>>>>>> Stashed changes
 		
 		
 if __name__ == "__main__":
