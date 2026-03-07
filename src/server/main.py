@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-#import gtfs_kit as gk
-import os
 import sqlite3
 import datetime
+from pathlib import Path
 
 def strToDate(str):
 	return datetime.strptime(str, "%H:%M:%S")
@@ -11,11 +10,12 @@ def strToDate(str):
 class Router:
 
 	def __init__(self):
+		# default to union station
 		self.userStop = 22748
 
 	def queryDict(self, query, parameters=None):
 		""" Python wrapper to send SQL requests to GTFS DB """
-		databasePath = f"{os.getcwd()}/gtfs/gtfs.sqlite"
+		databasePath = Path(__file__).parent.parent.parent / "gtfs" / "gtfs.sqlite"
 		conn = sqlite3.connect(databasePath)
 		with conn:
 			conn.row_factory = sqlite3.Row
@@ -25,15 +25,14 @@ class Router:
 			else:
 				cur.execute(query, parameters)
 			rows = cur.fetchall()	
-		
-
 		return rows
+
 	def getRoutesServingStop(self, stop_id = None):
 		"""" identifies routes serving selected stop_id """
 		if stop_id == None:
 			stop_id = self.userStop
 			
-		trips = f"""
+		trips = """
 			SELECT DISTINCT r.route_id
 			FROM routes r
 			JOIN trips t      ON r.route_id = t.route_id
@@ -42,7 +41,6 @@ class Router:
 		"""
 		rows=self.queryDict(trips,[stop_id])
 		routes = [row[0] for row in rows]
-		print(routes)
 		return routes
 	
 	def getNDeparturesPerLinePerDirection(self, N, stop_id=None, timeStamp=None):
@@ -94,9 +92,7 @@ class Router:
 		
 		
 if __name__ == "__main__":
-	#print(gk.list_feed(f"{os.getcwd()}/gtfs/DART.zip"))
 	router = Router()
-	
 	for line in router.getNDeparturesPerLinePerDirection(2):
 		for departure in line:
 			print(' | '.join(departure))
