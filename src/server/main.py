@@ -46,6 +46,7 @@ class Router:
 	def getNDeparturesPerLinePerDirection(self, N, stop_id=None, timeStamp=None):
 		"""
 		Fetches the next N departures from stop_id, after timeStamp, per line, per direction (asssumed to only be two)
+		returns: route_short_name, route_id, direction_id, trip_id, stop_id, arrival_time, departure_time, stop_sequence
 		"""
 		if timeStamp == None:
 			timeStamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -77,16 +78,28 @@ class Router:
 
 		return queryDict(query, [trip_id, stop_sequence, N])
 
+	
+
 	def findOutAndBack(self, deadline, startTime=None, stop_id=None):
 		""""
 		Method name pending
 		Algorithm to find max station loop time
 		Currently only supports same line navigation, !!does not support interlining!! 
 		"""
-		
+		def checkReturnTrip(row, direction_id):
+			""" Helper function to evaluate pivots"""
+			departures = self.getNDeparturesPerLinePerDirection(4, row["stop_id"], row["arrival_time"])
+			for option in departures:
+				nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)
+				for stop in nextStops:
+					if stop["stop_id"] == stop_id and strToDate(stop["arrival_time"]) < deadline:
+						return True
+			return False
+
+		# loop over immediate departures from origin
 		departures = getNDeparturesPerLinePerDirection(1, stop_id, startTime)
-		
 		for option in departures:
+<<<<<<< Updated upstream
 			outdoorTime = deadline - strToDate(option["departure_time"])
 			indoorTime = 0
 			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)
@@ -112,10 +125,22 @@ class Router:
 							pass
 
 				
+=======
+			nextStops = self.getNextNStops(trip_id=option[trip_id], stop_sequence=option[stop_sequence], N = 5)	
+			
+			maxPivot = None
+			for pivot in nextStops:
+				# Find furtherest stop you can reach and return to the origin before deadline
+				# TODO improve selection criteria
+				if checkReturnTrip(pivot, option["direction_id"]):
+					maxPivot = pivot
+				else:
+					break
+>>>>>>> Stashed changes
 		
 		
 if __name__ == "__main__":
 	router = Router()
-	for line in router.getNDeparturesPerLinePerDirection(2):
-		for departure in line:
-			print(' | '.join(departure))
+	# for line in router.getNDeparturesPerLinePerDirection(2):
+	# 	for departure in line:
+	# 		print(' | '.join(departure))
