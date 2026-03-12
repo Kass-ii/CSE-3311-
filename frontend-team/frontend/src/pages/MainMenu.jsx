@@ -4,22 +4,30 @@ function MainMenu() {
     return (
         <div className="menu-page">
             <div className="menu-card">
-                <h1>Main Menu</h1>
-                <p className="subtitle">Choose where you want to go next.</p>
 
-                <div className="menu-options">
+                <h1>ComfortRoute</h1>
+                <h2>Main Menu</h2>
+
+                <p className="menu-subtitle">
+                    Choose where you want to go next.
+                </p>
+
+                <div className="menu-grid">
+
                     <Link to="/planner" className="menu-button">
-                        Open Planner
+                        🚆 Open Planner
                     </Link>
 
-                    <Link to="/map" className="menu-button secondary">
-                        Open Map
+                    <Link to="/map" className="menu-button">
+                        🗺️ Open Map
                     </Link>
 
                     <button className="menu-button secondary">
-                        Account Settings
+                        ⚙️ Account Settings
                     </button>
+
                 </div>
+
             </div>
         </div>
     );

@@ -5,8 +5,6 @@ function Login() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-
-    // For now, this just sends the user to the main menu
     navigate("/menu");
   };
 
@@ -33,7 +31,7 @@ function Login() {
         <div className="auth-links">
           <Link to="/forgot-password">Forgot Password?</Link>
           <p>
-            Don�t have an account? <Link to="/signup">Sign Up</Link>
+            Don't have an account? <Link to="/signup">Sign Up</Link>
           </p>
         </div>
       </div>

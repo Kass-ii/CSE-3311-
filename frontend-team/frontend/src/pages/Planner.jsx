@@ -95,7 +95,7 @@ function Planner() {
             <h1>ComfortRoute</h1>
             <p>Find a route that keeps you inside the train longer.</p>
             <p className="helper-text">
-              Try a station like “mockingbird” or “downtown”.
+              Try a station like “centreport” or “downtown”.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ function Planner() {
                 type="text"
                 value={startQuery}
                 onChange={(e) => setStartQuery(e.target.value)}
-                placeholder="ex: mockingbird"
+                placeholder="ex: Centreport"
               />
             </label>
 
