@@ -1,8 +1,10 @@
 import sqlite3
 from pathlib import Path
 import csv
-#import json
+import json
 from collections import defaultdict
+import pickle
+
 """
 Script to construct graph structure from GTFS DB
 graph[stop_id] = [(neighbor_stop_id, departure_time, arrival_time, trip_id, cost), ...]
@@ -56,5 +58,6 @@ if __name__ == "__main__":
 					}
 				)
 			prevRow = row
-
+	with open(gtfsDumpPath / "graph.json", "w") as file:
+		json.dump(Graph, file, sort_keys=True, indent=4)
 		#print(json.dumps(Graph, sort_keys=True, indent=4))
