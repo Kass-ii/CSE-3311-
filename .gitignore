@@ -4,3 +4,6 @@ gtfs/*
 __pycache__/
 *.sqlite
 .mypy_cache
+
+node_modules/
+dist/
