@@ -1,4 +1,4 @@
-.PHONY = run analyze mypy bandit pylint flow cleanLog
+.PHONY = run analyze mypy bandit pylint flow eslint cleanLog
 
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -9,7 +9,7 @@ run:
 	cd src/backend && ../../.venv/bin/python3 app.py &
 	cd src/frontend && npm run dev
 
-analyze: mypy bandit pylint flow cleanLog
+analyze: pylint mypy bandit eslint flow cleanLog
 
 cleanLog:
 	> /path/to/logfile
@@ -26,3 +26,7 @@ pylint:
 flow:
 	echo "Running flow on frontend" >> $(ALOG)
 	npm run flow
+eslint:
+	echo "Running ESLint on frontend" >> $(ALOG)
+	npx eslint src/frontend/src/pages/*.jsx >> $(ALOG)
+	npx eslint src/frontend/src/*.jsx >> $(ALOG)

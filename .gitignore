@@ -10,3 +10,4 @@ __pycache__/
 flow-typed/npm
 node_modules/
 dist/
+eslint.config.mjs
