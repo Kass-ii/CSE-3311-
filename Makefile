@@ -1,4 +1,4 @@
-.PHONY = run analyze 
+.PHONY = run analyze mypy bandit pylint flow cleanLog
 
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -9,9 +9,20 @@ run:
 	cd src/backend && ../../.venv/bin/python3 app.py &
 	cd src/frontend && npm run dev
 
-analyze:
-	echo "Running mypy over backend" > $(ALOG)
-	cd src/backend && ../../.venv/bin/mypy *.py >> $(ALOG)
+analyze: mypy bandit pylint flow cleanLog
 
+cleanLog:
+	> /path/to/logfile
+	
+mypy:
+	echo "Running mypy over backend" >> $(ALOG)
+	cd src/backend && ../../.venv/bin/mypy *.py >> $(ALOG)
+bandit:
 	echo "Running bandit over backend >>" $(ALOG)
 	cd src/backend && ../../.venv/bin/bandit -r *.py --severity-level=high >> $(ALOG)
+pylint:
+	echo "Running pylint over backend >>" $(ALOG)
+	cd src/backend && ../../.venv/bin/pylint *.py >> $(ALOG)
+flow:
+	echo "Running flow on frontend" >> $(ALOG)
+	npm run flow

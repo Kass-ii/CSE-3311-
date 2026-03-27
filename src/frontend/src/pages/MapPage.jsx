@@ -1,3 +1,4 @@
+// @jsx h
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";

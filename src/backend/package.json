@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-flow": "^7.27.1",
+    "babel-plugin-syntax-hermes-parser": "^0.34.0"
+  }
+}

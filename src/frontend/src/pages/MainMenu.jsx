@@ -1,3 +1,4 @@
+// @jsx h
 import { Link } from "react-router-dom";
 
 function MainMenu() {
