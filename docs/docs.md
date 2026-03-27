@@ -11,6 +11,11 @@
 - gtfs kit [repo](https://github.com/araichev/gtfs_kit)
 - use `buildDB.py` to build GTFS DB	
 
+## Execution
+### Backend
+- `cd src/backend && python3 app.py`
+### Frontend
+- `cd src/frontend && npm run dev`
 
 ## GTFS
 - DART GTFS [source](https://www.dart.org/about/about-dart/fixed-route-schedule)
