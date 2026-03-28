@@ -1,10 +1,10 @@
-.PHONY = run analyze mypy bandit pylint flow eslint cleanLog
+.PHONY = dev analyze mypy bandit pylint flow eslint cleanLog
 
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 ALOG := $(ROOT_DIR)/analysis.log
 
-run:
+dev:
 # TODO: Fix file handling to allow execution from root of project
 	cd src/backend && ../../.venv/bin/python3 app.py &
 	cd src/frontend && npm run dev

@@ -1,5 +1,5 @@
 // @jsx h
-import { useEffect, useState } from "react";
+import { useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
 import L from "leaflet";
@@ -26,7 +26,7 @@ function MapPage() {
             .catch(() => setError("Could not load stations."));
     }, []);
 
-    useEffect(() => {
+    function locate(){
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
             return;
@@ -43,7 +43,8 @@ function MapPage() {
                 setError("Could not get your current location.");
             }
         );
-    }, []);
+    }
+	
 
     function distanceInKm(lat1, lng1, lat2, lng2) {
         const toRad = (value) => (value * Math.PI) / 180;
@@ -99,7 +100,7 @@ function MapPage() {
                 </p>
 
                 {error && <div className="error-box">{error}</div>}
-
+				<button onClick={locate}>Find My Location</button>
                 <MapContainer
                     center={mapCenter}
                     zoom={12}
