@@ -82,7 +82,7 @@ function Planner() {
 
       setResult(data);
     } catch (err) {
-      setError("Could not connect to the backend.");
+      setError("Could not connect to the backend. Error:\n"+err.message);
     } finally {
       setLoading(false);
     }
