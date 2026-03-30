@@ -82,6 +82,31 @@ def get_stations():
 
     return jsonify(stations_data)
 
+@app.route("/transitCenters", methods=["GET"])
+def getTransitCenters():
+	"""" Data is hardcoded for now """
+	transitCenters = [
+		{'name': 'Addison Transit Center', 'stop_id': [33245, 33596]},
+		{'name': 'Arapaho Center Station', 'stop_id': [33224, 26673]}, 
+		{'name': 'Bernal/Singleton Transfer Location', 'stop_id': [30488, 33262]}, 
+		{'name': 'CBD East Transfer Center', 'stop_id': [33242]}, 
+		{'name': 'CBD West Transfer Center', 'stop_id': [33318]}, 
+		{'name': 'Cockrell Hill Transfer Location', 'stop_id': [33257]}, 
+		{'name': 'Downtown Garland Station', 'stop_id': [26691]}, 
+		{'name': 'Downtown Irving/Heritage Crossing Station', 'stop_id': [33229]}, 
+		{'name': 'Hampton Station', 'stop_id': [33241]}, 
+		{'name': 'Illinois Station', 'stop_id': [21030]}, 
+		{'name': 'Jack Hatchell Transit Center', 'stop_id': [33233]}, 
+		{'name': 'J.B. Jackson Transit Center', 'stop_id': [33310, 33312]}, 
+		{'name': 'Lake June Station', 'stop_id': [33287, 29833]}, 
+		{'name': 'Lake Ray Hubbard Transit Center', 'stop_id': [33234]}, 
+		{'name': 'Ledbetter Station', 'stop_id': [33243, 23320]}, 
+		{'name': 'Parker Road Station', 'stop_id': [26897, 33276]}, 
+		{'name': 'Red Bird Transit Center', 'stop_id': [33228]}, 
+		{'name': 'South Garland Transit Center', 'stop_id': [33221]}, 
+		{'name': 'Westmoreland Station', 'stop_id': [15913, 33227]}
+	]
+	return jsonify(transitCenters)
 
 if __name__ == "__main__":
     app.run(debug=False)
