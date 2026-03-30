@@ -50,42 +50,30 @@ def plan_iter1():
 
 @app.route("/stations", methods=["GET"])
 def get_stations():
-	station_rows = stops.copy()
-	# Keep rows with coordinates
-	station_rows = station_rows[["stop_id", "stop_name", "stop_lat", "stop_lon"]].dropna()
+    # Get stop_ids that are served by rail routes (route_type 0 = light rail, 2 = commuter rail)
+    rail_route_ids = routes[routes["route_type"].isin([0, 2])]["route_id"]
+    rail_trip_ids = trips[trips["route_id"].isin(rail_route_ids)]["trip_id"]
+    rail_stop_ids = stop_times[stop_times["trip_id"].isin(rail_trip_ids)]["stop_id"].unique()
 
-	# Filter for likely rail stations by name
-	rail_keywords = [
-		"station",
-		"rail",
-		"tre",
-		"dart rail",
-		"green line",
-		"red line",
-		"blue line",
-		"orange line"
-	]
+    station_rows = stops.copy()
+    station_rows = station_rows[["stop_id", "stop_name", "stop_lat", "stop_lon"]].dropna()
+    station_rows = station_rows[station_rows["stop_id"].isin(rail_stop_ids)]
+    station_rows = station_rows.drop_duplicates(subset=["stop_name", "stop_lat", "stop_lon"])
+    station_rows["indoors"] = station_rows["stop_id"].astype(str).isin(
+        [str(sid) for sid in indoorIDs]
+    ).astype(int)
 
-	station_rows = station_rows[
-		station_rows["stop_name"].str.lower().apply(
-			lambda name: any(keyword in name for keyword in rail_keywords)
-		)
-	]
+    stations_data = []
+    for _, row in station_rows.iterrows():
+        stations_data.append({
+            "stop_id": str(row["stop_id"]),
+            "stop_name": row["stop_name"],
+            "lat": float(row["stop_lat"]),
+            "lng": float(row["stop_lon"]),
+            "indoors": int(row["indoors"])
+        })
 
-	# Remove duplicates by station name + coordinates
-	station_rows = station_rows.drop_duplicates(subset=["stop_name", "stop_lat", "stop_lon"]);
-	station_rows["indoors"] = station_rows["stop_id"].astype(str).isin([str(sid) for sid in indoorIDs]).astype(int)
-	stations_data = []
-	for _, row in station_rows.iterrows():
-		stations_data.append({
-			"stop_id": str(row["stop_id"]),
-			"stop_name": row["stop_name"],
-			"lat": float(row["stop_lat"]),
-			"lng": float(row["stop_lon"]),
-			"indoors": int(row["indoors"]) 
-		})
-	#return stations_data
-	return jsonify(stations_data)
+    return jsonify(stations_data)
 
 @app.route("/rail-shapes", methods=["GET"])
 def rail_shapes():
