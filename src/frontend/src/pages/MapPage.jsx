@@ -1,7 +1,7 @@
-// @jsx h
 import { useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from "react-leaflet";
+
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -12,12 +12,21 @@ L.Icon.Default.mergeOptions({
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
+const indoorIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+});
 
 function MapPage() {
     const [stations, setStations] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
     const [error, setError] = useState("");
-    const navigate = useNavigate();
+    const [railLines, setRailLines] = useState([]);
+	const navigate = useNavigate();
 
     useEffect(() => {
         fetch("http://127.0.0.1:5000/stations")
@@ -25,7 +34,16 @@ function MapPage() {
             .then((data) => setStations(data))
             .catch(() => setError("Could not load stations."));
     }, []);
-
+	useEffect(() => {
+    fetch("http://127.0.0.1:5000/rail-shapes")
+        .then((res) => res.json())
+        .then((data) => setRailLines(data.features))
+        .catch(() => setError("Could not load rail lines."));
+	}, []);
+	const LINE_Z_ORDER = { Blue: 1, Red: 2, Orange: 3, Green: 4 };
+	const sortedLines = [...railLines].sort(
+		(a, b) => LINE_Z_ORDER[a.properties.line_name] - LINE_Z_ORDER[b.properties.line_name]
+	);
     function locate(){
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
@@ -123,31 +141,51 @@ function MapPage() {
                             />
                         </>
                     )}
-
+					{sortedLines.map((feature, i) => (
+						<Polyline
+							key={i}
+							positions={feature.geometry.coordinates.map(([lng, lat]) => [lat, lng])}
+							pathOptions={{
+								color: feature.properties.color,
+								weight: 4,
+								opacity: 0.85,
+							}}
+						>
+							<Popup>{feature.properties.line_name} Line</Popup>
+						</Polyline>
+					))}
                     {stations.map((station) => {
-                        const isNearby = nearbyStations.some((s) => s.stop_id === station.stop_id);
+						const isNearby = nearbyStations.some((s) => s.stop_id === station.stop_id);
+						const isIndoor = station.indoors === 1;
 
-                        return (
-                            <Marker
-                                key={station.stop_id}
-                                position={[station.lat, station.lng]}
-                                icon={isNearby ? nearbyIcon : new L.Icon.Default()}
-                            >
-                                <Popup>
-                                    <strong>{station.stop_name}</strong>
-                                    <br />
-                                    {isNearby ? "Nearby station" : "Station"}
-                                    <br /><br />
-                                    <button
-                                        onClick={() =>
-                                            navigate(`/planner?start=${encodeURIComponent(station.stop_name)}`)
-                                        }
-                                    >
-                                        Open in Planner
-                                    </button>
-                                </Popup>
-                            </Marker>
-                        );
+						const icon = isNearby
+							? nearbyIcon
+							: isIndoor
+							? indoorIcon
+							: new L.Icon.Default();
+
+						return (
+							<Marker
+								key={station.stop_id}
+								position={[station.lat, station.lng]}
+								icon={icon}
+							>
+								<Popup>
+									<strong>{station.stop_name}</strong>
+									<br />
+									{isNearby ? "Nearby station" : "Station"}
+									{isIndoor && <><br /><span style={{ color: "green" }}>🏠 Indoor shelter available</span></>}
+									<br /><br />
+									<button
+										onClick={() =>
+											navigate(`/planner?start=${encodeURIComponent(station.stop_name)}`)
+										}
+									>
+										Open in Planner
+									</button>
+								</Popup>
+							</Marker>
+						);
                     })}
                 </MapContainer>
 
