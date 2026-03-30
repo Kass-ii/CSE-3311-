@@ -90,6 +90,7 @@ def getTransitCenters():
 		{'name': 'Arapaho Center Station', 'stop_id': [33224, 26673]}, 
 		{'name': 'Bernal/Singleton Transfer Location', 'stop_id': [30488, 33262]}, 
 		{'name': 'CBD East Transfer Center', 'stop_id': [33242]}, 
+		{'name': 'CBD West Transfer Center', 'stop_id': [33318]},
 		{'name': 'CBD West Transfer Center', 'stop_id': [33318]}, 
 		{'name': 'Cockrell Hill Transfer Location', 'stop_id': [33257]}, 
 		{'name': 'Downtown Garland Station', 'stop_id': [26691]}, 
@@ -106,7 +107,16 @@ def getTransitCenters():
 		{'name': 'South Garland Transit Center', 'stop_id': [33221]}, 
 		{'name': 'Westmoreland Station', 'stop_id': [15913, 33227]}
 	]
-	return jsonify(transitCenters)
+	stopIDs = [33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257, 26691, 33229, 33241, 21030, 33233, 33310, 33312, 33287, 29833, 33234, 33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227]
+	station_rows = stops.copy()
+	station_rows = station_rows[["stop_id", "stop_name", "stop_lat", "stop_lon"]].dropna()
+	station_rows = station_rows[
+		station_rows["stop_id"].astype(str).isin([str(sid) for sid in stopIDs])
+	]
+
+
+	return jsonify(station_rows)
 
 if __name__ == "__main__":
     app.run(debug=False)
+	
