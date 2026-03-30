@@ -6,15 +6,18 @@ from flask_cors import CORS
 
 from gtfs_parser import load_gtfs
 from routing import plan_backtrack_same_line
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
 
 # Load GTFS once when server starts
-stops, routes, trips, stop_times = load_gtfs()
+stops, routes, trips, stop_times, shapes = load_gtfs()
 # list of stop_ids corresponding to transit centers and indoor stations.
 indoorIDs = [33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257, 26691, 33229, 33241, 21030, 33233, 33310, 33312, 33287, 29833, 33234, 33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227, 22748, 26420]
-
+# Rendering information for route shape file
+DART_LINE_ORDER = ["Green", "Orange", "Red", "Blue"]
+OFFSET_STEP = 0.00015
 
 @app.route("/")
 def home():
@@ -82,8 +85,64 @@ def get_stations():
 			"indoors": int(row["indoors"]) 
 		})
 	#return stations_data
-	return jsonify(stations_data, indent=2)
+	return jsonify(stations_data)
+
+@app.route("/rail-shapes", methods=["GET"])
+def rail_shapes():
+	rail_routes = routes[routes["route_type"].isin([0, 1, 2])].copy()
+	def get_line_name(row):
+		for line in DART_LINE_ORDER:
+			if line.lower() in str(row["route_long_name"]).lower():
+				return line
+		return None
+
+	rail_routes["line_name"] = rail_routes.apply(get_line_name, axis=1)
+	rail_routes = rail_routes.dropna(subset=["line_name"])
+	# Use the color directly from GTFS, ensure it has a # prefix
+	rail_routes["hex_color"] = rail_routes["route_color"].apply(
+		lambda c: f"#{c}" if pd.notna(c) and not str(c).startswith("#") else str(c)
+	)
+
+	shape_to_line = (
+		trips[trips["route_id"].isin(rail_routes["route_id"])]
+		.merge(rail_routes[["route_id", "line_name", "hex_color"]], on="route_id")
+		[["shape_id", "line_name", "hex_color"]]
+		.drop_duplicates()
+	)
+	shapes_sorted = shapes.sort_values(["shape_id", "shape_pt_sequence"])
+
+	features = []
+	for _, row in shape_to_line.iterrows():
+		shape_id = row["shape_id"]
+		line_name = row["line_name"]
+		offset_index = DART_LINE_ORDER.index(line_name)
+
+		pts = shapes_sorted[shapes_sorted["shape_id"] == shape_id][
+			["shape_pt_lon", "shape_pt_lat"]
+		].values.tolist()
+		print(pts[:3])  # Should look like [[-96.xxx, 32.xxx], ...]
+		if len(pts) < 2:
+			continue
+
+		offset = (offset_index - 1.5) * OFFSET_STEP
+		pts_offset = [[lon, lat + offset] for lon, lat in pts]
+
+		features.append({
+			"type": "Feature",
+			"properties": {
+				"line_name": line_name,
+				"color": row["hex_color"],
+				"order": offset_index,
+			},
+			"geometry": {
+				"type": "LineString",
+				"coordinates": pts_offset,
+			}
+		})
+
+	features.sort(key=lambda f: -f["properties"]["order"])
+	import json
+	return jsonify({"type": "FeatureCollection", "features": features})
 
 if __name__ == "__main__":
 	app.run(debug=False)
-	
