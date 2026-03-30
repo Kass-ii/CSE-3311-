@@ -1,0 +1,22 @@
+indoorStations = [
+	"Addison Transit Center", [33245, 33596],
+	"Arapaho Center Station", [33224, 26673],
+	"Bernal/Singleton Transfer Location", [30488,33262],
+	"CBD East Transfer Center", [33242],
+	"CBD West Transfer Center", [33318],
+	"Cockrell Hill Transfer Location", [33257],
+	"Downtown Garland Station", [26691],
+	"Downtown Irving/Heritage Crossing Station", [33229],
+	"Hampton Station", [33241],
+	"Illinois Station", [21030],
+	"Jack Hatchell Transit Center", [33233],
+	"J.B. Jackson Transit Center", [33310, 33312],
+	"Lake June Station", [33287, 29833],
+	"Lake Ray Hubbard Transit Center", [33234],
+	"Ledbetter Station", [33243, 23320],
+	"Parker Road Station", [26897, 33276],
+	"Red Bird Transit Center", [33228],
+	"South Garland Transit Center", [33221],
+	"Westmoreland Station", [15913,33227]
+]
+
