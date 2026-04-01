@@ -22,8 +22,8 @@ function MainMenu() {
                         🗺️ Open Map
                     </Link>
 
-                    <Link to="/settings" className="settings-button">
-                        ⚙️ Settings
+                    <Link to="/settings" className="menu-button secondary">
+                        ⚙️ Account Settings
                     </Link>
 
                 </div>

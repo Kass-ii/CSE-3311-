@@ -6,6 +6,8 @@ import MainMenu from "./pages/MainMenu";
 import MapPage from "./pages/MapPage";
 import Planner from "./pages/Planner";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import Account from "./pages/Account";
 import "./App.css";
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
         <Route path="/map" element={<MapPage />} />
         <Route path="/planner" element={<Planner />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/account" element={<Account />} />
       </Routes>
     </BrowserRouter>
   );
