@@ -179,6 +179,21 @@ a:hover {
   background: #d1d5db;
 }
 
+.settings-button{
+  display: block;
+  padding: 14px;
+  background: rgb(202, 197, 197);
+  color: black;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+
+.settings-button:hover{
+  background: hsl(0, 5%, 68%)
+}
+
 /* PLANNER PAGE */
 
 .page {
@@ -343,6 +358,47 @@ a:hover {
   line-height: 1.6;
   word-break: break-word;
   font-size: 15px;
+}
+
+/* ACCOUNT SETTINGS PAGE */
+
+.settings-page{
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.settings-card{
+  background: white;
+  padding: 40px;
+  border-radius: 18px;
+  width: 420px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.settings-grid{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-btn{
+  display: block;
+  padding: 14px;
+  background: rgb(202, 197, 197);
+  color: black;
+  border-radius: 10px;
+  font-size: 16px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.settings-btn:hover{
+ background: hsl(0, 5%, 68%);
 }
 
 @media (max-width: 900px) {

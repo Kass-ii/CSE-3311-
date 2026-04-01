@@ -5,6 +5,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import MainMenu from "./pages/MainMenu";
 import MapPage from "./pages/MapPage";
 import Planner from "./pages/Planner";
+import Settings from "./pages/Settings";
 import "./App.css";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/menu" element={<MainMenu />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/planner" element={<Planner />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );
