@@ -5,7 +5,7 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #eef3f9, #dbeafe);
+  background: linear-gradient(135deg, #eef3f9, #1050a3);
   color: #1f2937;
 }
 
@@ -118,7 +118,7 @@ a:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #eef3f9, #dbeafe);
+  background: linear-gradient(135deg, #eef3f9, #1050a3);
 }
 
 .menu-card {
@@ -184,7 +184,7 @@ a:hover {
 .page {
   min-height: 100vh;
   padding: 32px;
-  background: linear-gradient(135deg, #eef3f9, #dbeafe);
+  background: linear-gradient(135deg, #eef3f9, #1050a3);
 }
 
 .app-shell {
@@ -345,73 +345,6 @@ a:hover {
   font-size: 15px;
 }
 
-/* ACCOUNT SETTINGS PAGE */
-
-.settings-page{
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.settings-card{
-  background: white;
-  padding: 40px;
-  border-radius: 18px;
-  width: 420px;
-  text-align: center;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-}
-
-.settings-h1{
-  margin-top: 10px;
-  font-size: 36px;
-  color: #1e3a8a;
-}
-
-.settings-grid{
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.settings-btn{
-  display: block;
-  padding: 14px;
-  background: hsl(228, 11%, 81%);
-  color: #111827;
-  border-radius: 10px;
-  font-size: 16px;
-  text-decoration: none;
-  font-weight: 600;
-  transition: 0.2s;
-  cursor: pointer;
-  border: none;
-}
-
-.settings-btn:hover{
-  background: hsl(228, 11%, 71%);;
-}
-
-/* PROFILE PAGE */
-.profile-page{
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #eef3f9, #dbeafe);
-}
-
-.profile-card{
-  background: white;
-  padding: 40px;
-  border-radius: 18px;
-  width: 420px;
-  text-align: center;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-}
-
-
 /* ACCOUNT PAGE */
 
 .account-page{
@@ -419,7 +352,7 @@ a:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #eef3f9, #dbeafe);
+  background: linear-gradient(135deg, #eef3f9,  #1050a3);
 }
 
 .account-card{
@@ -432,15 +365,16 @@ a:hover {
 }
 
 .account-h1{
-  margin-top: 10px;
-  font-size: 36px;
-  color: #1e3a8a;
+  margin: 0 0 30px 0;
+  font-size: 48px;
+  color: #163e8f;
+  text-align: center;
 }
 
 .account-grid{
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .account-btn{
@@ -460,6 +394,84 @@ a:hover {
 .account-btn:hover{
   background: hsl(228, 11%, 71%)
 }
+
+/* UPDATE PAGES */
+
+.update-page{
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+  background: linear-gradient(135deg, #eef3f9,  #1050a3);
+}
+
+.update-card{
+  background: white;
+  padding: 40px;
+  border-radius: 18px;
+  width: 420px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.update-h1{
+  margin: 0 0 10px 0;
+  font-size: 48px;
+  color: #163e8f;
+  text-align: center;
+}
+
+.update-form{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.update-form label{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  gap: 15px;
+}
+
+.update-form input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: 0.2s ease;
+}
+
+.update-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.update-form button {
+  margin-top: 8px;
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 13px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.update-form button:hover {
+  background: #1d4ed8;
+}
+
 
 @media (max-width: 900px) {
   .app-shell {

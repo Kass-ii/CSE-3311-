@@ -5,9 +5,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import MainMenu from "./pages/MainMenu";
 import MapPage from "./pages/MapPage";
 import Planner from "./pages/Planner";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import Account from "./pages/Account";
+import AccountSettings from "./pages/AccountSettings";
+import UpdateEmail from "./pages/UpdateEmail";
+import UpdatePassword from "./pages/UpdatePassword";
 import "./App.css";
 
 function App() {
@@ -20,9 +20,9 @@ function App() {
         <Route path="/menu" element={<MainMenu />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/planner" element={<Planner />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/account" element={<Account />} />
+        <Route path="/account-settings" element={<AccountSettings />} />
+        <Route path="/update-password" element={<UpdatePassword />} />
+        <Route path="/update-email" element={<UpdateEmail />} />
       </Routes>
     </BrowserRouter>
   );

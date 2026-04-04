@@ -22,7 +22,7 @@ function MainMenu() {
                         🗺️ Open Map
                     </Link>
 
-                    <Link to="/settings" className="menu-button secondary">
+                    <Link to="/account-settings" className="menu-button secondary">
                         ⚙️ Account Settings
                     </Link>
 
