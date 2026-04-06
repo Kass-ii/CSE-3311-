@@ -1,24 +1,36 @@
 // @jsx h
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import "../App.css";
+import { useSettings } from "../context/SettingsContext";
 
 function Planner() {
   const [searchParams] = useSearchParams();
-  const [startQuery, setStartQuery] = useState("");
-  const [startAfter, setStartAfter] = useState("");
-  const [returnBy, setReturnBy] = useState("");
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [departTime, setDepartTime] = useState("");
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [stations, setStations] = useState([]);
+  const { settings } = useSettings();
+
   useEffect(() => {
-    const stationFromMap = searchParams.get("start");
-    if (stationFromMap) {
-      setStartQuery(stationFromMap);
+    const originFromMap = searchParams.get("origin");
+    const destinationFromMap = searchParams.get("destination");
+
+    if (originFromMap) {
+      setOrigin(originFromMap);
     }
-  }, [searchParams]);
+
+    if (destinationFromMap) {
+      setDestination(destinationFromMap);
+    }
+
+    setStations(settings.stations || []);
+  }, [searchParams, settings]);
 
   function formatTo12Hour(timeString) {
     if (!timeString) return "";
@@ -38,38 +50,34 @@ function Planner() {
     setError("");
     setResult(null);
 
-    if (!startQuery.trim()) {
-      setError("Please enter a start station.");
+    if (!origin.trim()) {
+      setError("Please enter an origin station.");
       return;
     }
 
-    if (!startAfter) {
-      setError("Please choose a start-after time.");
+    if (!destination.trim()) {
+      setError("Please enter a destination station.");
       return;
     }
 
-    if (!returnBy) {
-      setError("Please choose a return-by time.");
-      return;
-    }
-
-    if (returnBy <= startAfter) {
-      setError("Return-by time must be later than start-after time.");
+    if (!departTime) {
+      setError("Please choose a departure time.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/plan-iter1", {
+      const response = await fetch("http://127.0.0.1:5000/plan-iter3", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          start_query: startQuery,
-          start_after: startAfter,
-          return_by: returnBy,
+          origin,
+          destination,
+          depart_time: departTime,
+          settings,
         }),
       });
 
@@ -82,7 +90,7 @@ function Planner() {
 
       setResult(data);
     } catch (err) {
-      setError("Could not connect to the backend. Error:\n"+err.message);
+      setError("Could not connect to the backend. Error:\n" + err.message);
     } finally {
       setLoading(false);
     }
@@ -94,7 +102,7 @@ function Planner() {
         <div className="left-panel">
           <div className="brand-box">
             <h1>ComfortRoute</h1>
-            <p>Find a route that keeps you inside the train longer.</p>
+            <p>Find a full route between two stations using comfort-based routing.</p>
             <p className="helper-text">
               Try a station like “centreport” or “downtown”.
             </p>
@@ -102,37 +110,37 @@ function Planner() {
 
           <form onSubmit={handleSubmit} className="trip-form">
             <label>
-              Start Station
+              Origin Station
               <input
                 type="text"
-                value={startQuery}
-                onChange={(e) => setStartQuery(e.target.value)}
-                placeholder="ex: Centreport"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+                placeholder="ex: Centreport Station"
               />
             </label>
 
             <label>
-              Start After Time
+              Destination Station
               <input
-                type="time"
-                step="1"
-                value={startAfter}
-                onChange={(e) => setStartAfter(e.target.value)}
+                type="text"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                placeholder="ex: West End Station"
               />
             </label>
 
             <label>
-              Return By Time
+              Departure Time
               <input
                 type="time"
                 step="1"
-                value={returnBy}
-                onChange={(e) => setReturnBy(e.target.value)}
+                value={departTime}
+                onChange={(e) => setDepartTime(e.target.value)}
               />
             </label>
 
             <button type="submit" disabled={loading}>
-              {loading ? "Finding Route..." : "Find Comfortable Route"}
+              {loading ? "Finding Route..." : "Find Route"}
             </button>
           </form>
 
@@ -144,7 +152,7 @@ function Planner() {
             <div className="empty-state">
               <h2>Your route will appear here</h2>
               <p>
-                Enter a station and time window to generate a comfort-based trip.
+                Enter an origin, destination, and departure time to generate a route.
               </p>
             </div>
           )}
@@ -161,38 +169,39 @@ function Planner() {
               <h2>Best Route Found</h2>
 
               <p className="summary">
-                ComfortRoute found a trip on the {result.route_name || result.route_id} line
-                that keeps you on the train for {result.metrics.total_ride_minutes} minutes
-                and gets you back by {formatTo12Hour(result.leg2.arrive_back)}.
+                ComfortRoute found a route on {result.route_summary} that keeps you on the train for {result.metrics?.total_ride_minutes ?? "N/A"} minutes.
+                {result.legs && result.legs.length > 1 && (
+                  <> You arrive at {formatTo12Hour(result.legs[result.legs.length - 1].arrive_time)}.</>
+                )}
               </p>
 
               <div className="info-grid">
                 <div className="info-box">
                   <h3>Route Summary</h3>
-                  <p><strong>Line:</strong> {result.route_name || "N/A"}</p>
+                  <p><strong>Route:</strong> {result.route_summary}</p>
                   <p><strong>Total Time on Train:</strong> {result.metrics.total_ride_minutes} minutes</p>
-                  <p><strong>Wait at Turn Stop:</strong> {result.metrics.turn_wait_minutes} minutes</p>
+                  <p><strong>Total Wait Time:</strong> {result.metrics.total_wait_minutes} minutes</p>
                 </div>
 
-                <div className="info-box">
-                  <h3>Outbound Trip</h3>
-                  <p><strong>Leave Start Station:</strong> {formatTo12Hour(result.leg1.depart_start)}</p>
-                  <p><strong>Turn Stop:</strong> {result.leg1.turn_stop_name || result.leg1.turn_stop_id}</p>
-                  <p><strong>Arrive at Turn Stop:</strong> {formatTo12Hour(result.leg1.arrive_turn)}</p>
-                  <p><strong>Time on Train:</strong> {result.leg1.ride_minutes} minutes</p>
-                </div>
-
-                <div className="info-box">
-                  <h3>Return Trip</h3>
-                  <p><strong>Leave Turn Stop:</strong> {formatTo12Hour(result.leg2.depart_turn)}</p>
-                  <p><strong>Return to Start Station:</strong> {formatTo12Hour(result.leg2.arrive_back)}</p>
-                  <p><strong>Time on Train:</strong> {result.leg2.ride_minutes} minutes</p>
-                </div>
+                {result.legs && result.legs.map((leg, index) => (
+                  <div key={index} className="info-box">
+                    <h3>{`Leg ${index + 1}`}</h3>
+                    <p><strong>From:</strong> {leg.from_stop}</p>
+                    <p><strong>To:</strong> {leg.to_stop}</p>
+                    <p><strong>Depart:</strong> {formatTo12Hour(leg.depart_time)}</p>
+                    <p><strong>Arrive:</strong> {formatTo12Hour(leg.arrive_time)}</p>
+                    <p><strong>Route:</strong> {leg.route_name}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
       </div>
+
+      <Link to="/menu" className="menu-button back-main-center">
+        ← Back to Main Menu
+      </Link>
     </div>
   );
 }
