@@ -50,10 +50,10 @@ function MapPage() {
             .catch(() => setError("Could not load rail lines."));
     }, []);
 
-    const LINE_Z_ORDER = { Blue: 1, Red: 2, Orange: 3, Green: 4 };
-    const sortedLines = [...railLines].sort(
-        (a, b) => LINE_Z_ORDER[a.properties.line_name] - LINE_Z_ORDER[b.properties.line_name]
-    );
+    const LINE_RENDER_ORDER = { Green: 0, Orange: 1, Red: 2, Blue: 3, Silver: 4, TRE: 5, Streetcar: 6 };
+	const sortedLines = [...railLines].sort(
+		(a, b) => LINE_RENDER_ORDER[a.properties.line_name] - LINE_RENDER_ORDER[b.properties.line_name]
+	);
     function locate() {
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
