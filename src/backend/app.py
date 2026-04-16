@@ -65,7 +65,7 @@ def plan_iter1():
         trips=trips,
         stop_times=stop_times
     )
-
+	
     return jsonify(result)
 
 
@@ -181,18 +181,24 @@ def plan_iter3():
         "route_summary": f"{origin} → Bell Station → {destination}",
         "legs": [
             {
-                "from_stop": origin,
+                "from_stop_name": origin,
+				"from_stop_id": 123,
                 "to_stop": "Bell Station",
+				"to_stop_id": 124,
                 "depart_time": "10:00:00",
                 "arrive_time": "10:07:00",
-                "route_name": "TRE"
+                "route_name": "TRE",
+				"route_id": 321
             },
             {
-                "from_stop": "Bell Station",
-                "to_stop": destination,
+                "from_stop_name": "Bell Station",
+                "from_stop_id": 124,
+				"to_stop_name": destination,
+				"to_stop_id": 123,
                 "depart_time": "10:10:00",
                 "arrive_time": "10:22:00",
-                "route_name": "DART Green"
+                "route_name": "DART Green",
+				"route_id": 321
             }
         ],
         "metrics": {
@@ -203,6 +209,23 @@ def plan_iter3():
     }
 
     return jsonify(result)
+
+@app.route("/viusalize-route", method=["POST"])
+def viusalize_route():
+	""" 
+	Creates visualization of generated trip
+	Expects output of same form as plan_backtrack_same_line, passed from fronted back to backend
+	"""
+	data = request.get_data()
+	legs = data.get("legs", "").strip()
+	legShapes = []
+	for leg in legs:
+		legShapes.append( get_segment_geojson(
+				route_id=leg.route_id,
+				trip_id=leg.trip_id,
+				stop_id_a=leg.from_stop_id,
+				stop_id_b=leg.to_stop_id 
+		))
 
 
 if __name__ == "__main__":
