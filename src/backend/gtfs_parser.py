@@ -23,6 +23,5 @@ def load_gtfs():
 	# return all loaded data
 	return stops, routes, trips, stop_times, shapes
 
-
 if __name__ == "__main__":
 	load_gtfs()

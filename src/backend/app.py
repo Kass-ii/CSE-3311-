@@ -4,7 +4,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from gtfs_parser import load_gtfs, get_segment_geojson
+from gtfs_parser import load_gtfs
+from shape_utils import apply_line_style_and_offset, get_segment_geojson
 from routing import plan_backtrack_same_line
 import pandas as pd
 
@@ -17,43 +18,8 @@ stops, routes, trips, stop_times, shapes = load_gtfs()
 indoorIDs = [33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257, 26691, 33229, 33241, 21030,
              33233, 33310, 33312, 33287, 29833, 33234, 33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227, 22748, 26420]
 # Rendering information for route shape file
-DART_LINE_ORDER = ["Green", "Orange", "Red",
-                   "Blue", "Silver", "TRE", "Streetcar"]
-DART_LINE_KEYWORDS = {
-    "Green":     ["green line"],
-    "Orange":    ["orange line"],
-    "Red":       ["red line"],
-    "Blue":      ["blue line"],
-    "Silver":    ["silver line", "silver"],
-    "TRE":       ["trinity railway", "tre"],
-    "Streetcar": ["streetcar", "dallas street"],
-}
-DART_LINE_OFFSETS = {
-    "Green":     0,
-    "Orange":    1,
-	"Red":       2,
-    "Blue":      3,
-    "Silver":    4,
-    "TRE":       4,
-    "Streetcar": 4,
-}
-OFFSET_STEP = 0.00015
 
-def apply_line_style_and_offset(coords, line_name, color):
-    """
-    Applies vertical offset and styling to a LineString coordinate list.
-    Reuses DART_LINE_* constants.
-    """
-    if not line_name or line_name not in DART_LINE_ORDER:
-        return coords, color, None
 
-    offset_index = DART_LINE_ORDER.index(line_name)
-
-    offset = (offset_index - 1.5) * OFFSET_STEP
-
-    coords_offset = [[lon, lat + offset] for lon, lat in coords]
-
-    return coords_offset, color, offset_index
 
 @app.route("/")
 def home():
