@@ -345,8 +345,261 @@ a:hover {
   font-size: 15px;
 }
 
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.station-hours {
+  font-size: 0.86rem;
+  color: #333;
+}
+
+.station-badge {
+  margin-top: 0.35rem;
+  font-weight: 600;
+}
+
+.back-main-center {
+  display: block;
+  width: fit-content;
+  margin: 20px auto;
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ACCOUNT PAGE */
+
+.account-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #eef3f9, #1050a3);
+}
+
+.account-card {
+  background: white;
+  padding: 40px;
+  border-radius: 18px;
+  width: 420px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.account-h1 {
+  margin: 0 0 30px 0;
+  font-size: 48px;
+  color: #163e8f;
+  text-align: center;
+}
+
+.account-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account-btn {
+  display: block;
+  padding: 14px;
+  background: hsl(228, 11%, 81%);
+  color: #111827;
+  border-radius: 10px;
+  font-size: 16px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.account-btn:hover {
+  background: hsl(228, 11%, 71%);
+}
+
+/* UPDATE PAGES */
+
+.update-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+  background: linear-gradient(135deg, #eef3f9, #1050a3);
+}
+
+.update-card {
+  background: white;
+  padding: 40px;
+  border-radius: 18px;
+  width: 420px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.update-h1 {
+  margin: 0 0 10px 0;
+  font-size: 48px;
+  color: #163e8f;
+  text-align: center;
+}
+
+.update-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.update-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.update-form input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: 0.2s ease;
+}
+
+.update-form input:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.update-form button {
+  margin-top: 8px;
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 13px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.update-form button:hover {
+  background: #1d4ed8;
+}
+
+.map-page {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #e8edf2;
+}
+
+.map-full-layout {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 12px;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.map-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.map-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.map-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.map-location-btn {
+  position: absolute;
+  top: 16px;
+  left: 50px;
+  z-index: 1000;
+  background: white;
+  color: #1f2937;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  transition: 0.2s;
+}
+
+.map-location-btn:hover {
+  background: #f3f4f6;
+}
+
+.map-wrapper .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.selection-box {
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.selection-box h3 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: #1d4ed8;
+}
+
+.selection-box p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.selection-box .menu-button {
+  margin-top: 14px;
+  width: 100%;
+}
+
+.map-back-link {
+  display: inline-block;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .map-full-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
   }
 }

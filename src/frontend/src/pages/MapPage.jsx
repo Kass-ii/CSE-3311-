@@ -1,4 +1,5 @@
-import { useEffect, useState} from "react";
+import { useSettings } from "../context/SettingsContext";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from "react-leaflet";
 
@@ -22,29 +23,38 @@ const indoorIcon = new L.Icon({
 });
 
 function MapPage() {
+    const { settings } = useSettings();
     const [stations, setStations] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
     const [error, setError] = useState("");
     const [railLines, setRailLines] = useState([]);
-	const navigate = useNavigate();
+    const [selectedOrigin, setSelectedOrigin] = useState("");
+    const [selectedDestination, setSelectedDestination] = useState("");
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch("http://127.0.0.1:5000/stations")
-            .then((res) => res.json())
-            .then((data) => setStations(data))
-            .catch(() => setError("Could not load stations."));
+            .then((r) => r.json())
+            .then((data) =>
+                setStations(data.map((s) => ({
+                    ...s,
+                    hours: s.hours || "05:00-23:00",
+                })))
+            )
+            .catch(() => { });
     }, []);
-	useEffect(() => {
-    fetch("http://127.0.0.1:5000/rail-shapes")
-        .then((res) => res.json())
-        .then((data) => setRailLines(data.features))
-        .catch(() => setError("Could not load rail lines."));
-	}, []);
-	const LINE_Z_ORDER = { Blue: 1, Red: 2, Orange: 3, Green: 4 };
+    useEffect(() => {
+        fetch("http://127.0.0.1:5000/rail-shapes")
+            .then((res) => res.json())
+            .then((data) => setRailLines(data.features))
+            .catch(() => setError("Could not load rail lines."));
+    }, []);
+
+    const LINE_RENDER_ORDER = { Green: 0, Orange: 1, Red: 2, Blue: 3, Silver: 4, TRE: 5, Streetcar: 6 };
 	const sortedLines = [...railLines].sort(
-		(a, b) => LINE_Z_ORDER[a.properties.line_name] - LINE_Z_ORDER[b.properties.line_name]
+		(a, b) => LINE_RENDER_ORDER[a.properties.line_name] - LINE_RENDER_ORDER[b.properties.line_name]
 	);
-    function locate(){
+    function locate() {
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
             return;
@@ -62,7 +72,6 @@ function MapPage() {
             }
         );
     }
-	
 
     function distanceInKm(lat1, lng1, lat2, lng2) {
         const toRad = (value) => (value * Math.PI) / 180;
@@ -89,16 +98,6 @@ function MapPage() {
         )
         : [];
 
-    const nearbyIcon = new L.Icon({
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-        className: "nearby-station-marker"
-    });
-
     const userIcon = new L.Icon({
         iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
         iconSize: [28, 28],
@@ -109,102 +108,150 @@ function MapPage() {
         ? [userLocation.lat, userLocation.lng]
         : [32.82, -96.80];
 
+    function openPlannerWithSelection() {
+        if (!selectedOrigin || !selectedDestination) {
+            setError("Please select both an origin and a destination station.");
+            return;
+        }
+
+        navigate(
+            `/planner?origin=${encodeURIComponent(selectedOrigin)}&destination=${encodeURIComponent(selectedDestination)}`
+        );
+    }
+
     return (
         <div className="map-page">
-            <div className="map-card">
-                <h1>Transit Map</h1>
-                <p className="subtitle">
-                    Explore nearby stations and open the planner directly from the map.
-                </p>
+            <div className="map-full-layout">
+                <div className="map-main-column">
+                    {error && <div className="error-box">{error}</div>}
 
-                {error && <div className="error-box">{error}</div>}
-				<button onClick={locate}>Find My Location</button>
-                <MapContainer
-                    center={mapCenter}
-                    zoom={12}
-                    style={{ height: "500px", borderRadius: "12px" }}
-                >
-                    <TileLayer
-                        attribution="&copy; OpenStreetMap contributors"
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
+                    <div className="map-wrapper">
 
-                    {userLocation && (
-                        <>
-                            <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-                                <Popup>Your current location</Popup>
-                            </Marker>
-                            <Circle
-                                center={[userLocation.lat, userLocation.lng]}
-                                radius={3000}
-                                pathOptions={{ color: "blue", fillColor: "#3b82f6", fillOpacity: 0.1 }}
+                        <button className="map-location-btn" onClick={locate}>
+                            📍 My Location
+                        </button>
+
+                        <MapContainer
+                            center={mapCenter}
+                            zoom={12}
+                            style={{ height: "100%", width: "100%" }}
+                        >
+                            <TileLayer
+                                attribution="&copy; OpenStreetMap contributors"
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
-                        </>
-                    )}
-					{sortedLines.map((feature, i) => (
-						<Polyline
-							key={i}
-							positions={feature.geometry.coordinates.map(([lng, lat]) => [lat, lng])}
-							pathOptions={{
-								color: feature.properties.color,
-								weight: 4,
-								opacity: 0.85,
-							}}
-						>
-							<Popup>{feature.properties.line_name} Line</Popup>
-						</Polyline>
-					))}
-                    {stations.map((station) => {
-						const isNearby = nearbyStations.some((s) => s.stop_id === station.stop_id);
-						const isIndoor = station.indoors === 1;
 
-						const icon = isNearby
-							? nearbyIcon
-							: isIndoor
-							? indoorIcon
-							: new L.Icon.Default();
+                            {userLocation && (
+                                <>
+                                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
+                                        <Popup>Your current location</Popup>
+                                    </Marker>
+                                    <Circle
+                                        center={[userLocation.lat, userLocation.lng]}
+                                        radius={3000}
+                                        pathOptions={{ color: "blue", fillColor: "#3b82f6", fillOpacity: 0.1 }}
+                                    />
+                                </>
+                            )}
 
-						return (
-							<Marker
-								key={station.stop_id}
-								position={[station.lat, station.lng]}
-								icon={icon}
-							>
-								<Popup>
-									<strong>{station.stop_name}</strong>
-									<br />
-									{isNearby ? "Nearby station" : "Station"}
-									{isIndoor && <><br /><span style={{ color: "green" }}>🏠 Indoor shelter available</span></>}
-									<br /><br />
-									<button
-										onClick={() =>
-											navigate(`/planner?start=${encodeURIComponent(station.stop_name)}`)
-										}
-									>
-										Open in Planner
-									</button>
-								</Popup>
-							</Marker>
-						);
-                    })}
-                </MapContainer>
-
-                {userLocation && nearbyStations.length > 0 && (
-                    <div style={{ marginTop: "20px" }}>
-                        <h3>Nearby Rail Stations</h3>
-                        <ul style={{ paddingLeft: "20px" }}>
-                            {nearbyStations.map((station) => (
-                                <li key={station.stop_id} style={{ marginBottom: "8px" }}>
-                                    {station.stop_name}
-                                </li>
+                            {sortedLines.map((feature, i) => (
+                                <Polyline
+                                    key={i}
+                                    positions={feature.geometry.coordinates.map(([lng, lat]) => [lat, lng])}
+                                    pathOptions={{
+                                        color: feature.properties.color,
+                                        weight: 4,
+                                        opacity: 0.85,
+                                    }}
+                                >
+                                    <Popup>{feature.properties.line_name} Line</Popup>
+                                </Polyline>
                             ))}
-                        </ul>
-                    </div>
-                )}
 
-                <Link to="/menu" className="back-link">
-                    ← Back to Main Menu
-                </Link>
+                            {stations.map((station) => {
+                                const isNearby = nearbyStations.some((s) => s.stop_id === station.stop_id);
+                                const isIndoor = station.indoors === 1;
+
+                                return (
+                                    <Marker
+                                        key={station.stop_id}
+                                        position={[station.lat, station.lng]}
+                                        icon={
+                                            settings.highlightIndoorLobby && station.indoors === 1
+                                                ? indoorIcon
+                                                : new L.Icon.Default()
+                                        }
+                                    >
+                                        <Popup>
+                                            <strong>{station.stop_name}</strong>
+                                            <br />
+                                            {isNearby ? "Nearby station" : "Station"}
+                                            {isIndoor && (
+                                                <>
+                                                    <br />
+                                                    <span style={{ color: "green" }}>🏠 Indoor shelter available</span>
+                                                </>
+                                            )}
+                                            {station.indoors === 1 ? (
+                                                <div>Indoor lobby available</div>
+                                            ) : (
+                                                <div>No indoor lobby</div>
+                                            )}
+                                            {settings.showStationHours && <div>Hours: {station.hours}</div>}
+                                            <br />
+
+                                            <button
+                                                onClick={() => setSelectedOrigin(station.stop_name)}
+                                                style={{ marginRight: "8px" }}
+                                            >
+                                                Set as Origin
+                                            </button>
+
+                                            <button
+                                                onClick={() => setSelectedDestination(station.stop_name)}
+                                            >
+                                                Set as Destination
+                                            </button>
+                                        </Popup>
+                                    </Marker>
+                                );
+                            })}
+                        </MapContainer>
+                    </div>
+
+                    <Link to="/menu" className="back-link map-back-link">
+                        ← Back to Main Menu
+                    </Link>
+                </div>
+
+                <div className="map-side-column">
+                    <div className="selection-box">
+                        <h3>Selected Trip</h3>
+                        <p><strong>Origin:</strong> {selectedOrigin || "Not selected"}</p>
+                        <p><strong>Destination:</strong> {selectedDestination || "Not selected"}</p>
+
+                        <button
+                            className="menu-button"
+                            onClick={openPlannerWithSelection}
+                            disabled={!selectedOrigin || !selectedDestination}
+                        >
+                            Open Planner with Selection
+                        </button>
+                    </div>
+
+                    {userLocation && nearbyStations.length > 0 && (
+                        <div className="selection-box">
+                            <h3>Nearby Rail Stations</h3>
+                            <ul style={{ paddingLeft: "20px", margin: 0 }}>
+                                {nearbyStations.map((station) => (
+                                    <li key={station.stop_id} style={{ marginBottom: "8px" }}>
+                                        {station.stop_name}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

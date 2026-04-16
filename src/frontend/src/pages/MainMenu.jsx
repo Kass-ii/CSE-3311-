@@ -5,7 +5,6 @@ function MainMenu() {
     return (
         <div className="menu-page">
             <div className="menu-card">
-
                 <h1>ComfortRoute</h1>
                 <h2>Main Menu</h2>
 
@@ -14,7 +13,6 @@ function MainMenu() {
                 </p>
 
                 <div className="menu-grid">
-
                     <Link to="/planner" className="menu-button">
                         🚆 Open Planner
                     </Link>
@@ -23,12 +21,14 @@ function MainMenu() {
                         🗺️ Open Map
                     </Link>
 
-                    <button className="menu-button secondary">
-                        ⚙️ Account Settings
-                    </button>
+                    <Link to="/settings" className="menu-button secondary">
+                        ⚙️ App Settings
+                    </Link>
 
+                    <Link to="/account-settings" className="menu-button secondary">
+                        👤 Account Settings
+                    </Link>
                 </div>
-
             </div>
         </div>
     );
