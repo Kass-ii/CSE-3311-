@@ -4,7 +4,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from gtfs_parser import load_gtfs
+from gtfs_parser import load_gtfs, get_segment_geojson
 from routing import plan_backtrack_same_line
 import pandas as pd
 
@@ -39,6 +39,21 @@ DART_LINE_OFFSETS = {
 }
 OFFSET_STEP = 0.00015
 
+def apply_line_style_and_offset(coords, line_name, color):
+    """
+    Applies vertical offset and styling to a LineString coordinate list.
+    Reuses DART_LINE_* constants.
+    """
+    if not line_name or line_name not in DART_LINE_ORDER:
+        return coords, color, None
+
+    offset_index = DART_LINE_ORDER.index(line_name)
+
+    offset = (offset_index - 1.5) * OFFSET_STEP
+
+    coords_offset = [[lon, lat + offset] for lon, lat in coords]
+
+    return coords_offset, color, offset_index
 
 @app.route("/")
 def home():
@@ -101,6 +116,7 @@ def get_stations():
 
 
 @app.route("/rail-shapes", methods=["GET"])
+@app.route("/rail-shapes", methods=["GET"])
 def rail_shapes():
     rail_routes = routes[routes["route_type"].isin([0, 1, 2])].copy()
 
@@ -115,10 +131,9 @@ def rail_shapes():
 
     rail_routes["line_name"] = rail_routes.apply(get_line_name, axis=1)
     rail_routes = rail_routes.dropna(subset=["line_name"])
-    # Use the color directly from GTFS, ensure it has a # prefix
+
     rail_routes["hex_color"] = rail_routes["route_color"].apply(
-        lambda c: f"#{c}" if pd.notna(c) and not str(
-            c).startswith("#") else str(c)
+        lambda c: f"#{c}" if pd.notna(c) and not str(c).startswith("#") else str(c)
     )
 
     shape_to_line = (
@@ -127,41 +142,47 @@ def rail_shapes():
         [["shape_id", "line_name", "hex_color"]]
         .drop_duplicates()
     )
+
     shapes_sorted = shapes.sort_values(["shape_id", "shape_pt_sequence"])
 
     features = []
+
     for _, row in shape_to_line.iterrows():
         shape_id = row["shape_id"]
         line_name = row["line_name"]
-        offset_index = DART_LINE_ORDER.index(line_name)
-        offset = (DART_LINE_OFFSETS[line_name] - 1.5) * OFFSET_STEP
+        color = row["hex_color"]
 
         pts = shapes_sorted[shapes_sorted["shape_id"] == shape_id][
             ["shape_pt_lon", "shape_pt_lat"]
         ].values.tolist()
-        print(pts[:3])  # Should look like [[-96.xxx, 32.xxx], ...]
+
         if len(pts) < 2:
             continue
 
-        offset = (offset_index - 1.5) * OFFSET_STEP
-        pts_offset = [[lon, lat + offset] for lon, lat in pts]
+        # Reuse shared offset logic
+        pts, color, order = apply_line_style_and_offset(
+            pts, line_name, color
+        )
 
         features.append({
             "type": "Feature",
             "properties": {
                 "line_name": line_name,
-                "color": row["hex_color"],
-                "order": offset_index,
+                "color": color,
+                "order": order,
             },
             "geometry": {
                 "type": "LineString",
-                "coordinates": pts_offset,
+                "coordinates": pts,
             }
         })
 
     features.sort(key=lambda f: -f["properties"]["order"])
-    import json
-    return jsonify({"type": "FeatureCollection", "features": features})
+
+    return jsonify({
+        "type": "FeatureCollection",
+        "features": features
+    })
 
 
 @app.route("/plan-iter3", methods=["POST"])
@@ -210,22 +231,64 @@ def plan_iter3():
 
     return jsonify(result)
 
-@app.route("/viusalize-route", method=["POST"])
-def viusalize_route():
-	""" 
-	Creates visualization of generated trip
-	Expects output of same form as plan_backtrack_same_line, passed from fronted back to backend
-	"""
-	data = request.get_data()
-	legs = data.get("legs", "").strip()
-	legShapes = []
-	for leg in legs:
-		legShapes.append( get_segment_geojson(
-				route_id=leg.route_id,
-				trip_id=leg.trip_id,
-				stop_id_a=leg.from_stop_id,
-				stop_id_b=leg.to_stop_id 
-		))
+@app.route("/visualize-route", methods=["POST"])
+def visualize_route():
+    data = request.get_json()
+    legs = data.get("legs", [])
+
+    features = []
+
+    for leg in legs:
+        route_id = leg.get("route_id")
+        trip_id = leg.get("trip_id")
+        stop_a = leg.get("from_stop_id")
+        stop_b = leg.get("to_stop_id")
+
+        if not trip_id:
+            continue
+
+        segment = get_segment_geojson(
+            route_id=route_id,
+            trip_id=trip_id,
+            stop_id_a=stop_a,
+            stop_id_b=stop_b
+        )
+
+        if segment is None:
+            continue
+
+        coords = segment["geometry"]["coordinates"]
+
+        # Lookup metadata
+        if trip_id in trip_route_lookup.index:
+            meta = trip_route_lookup.loc[trip_id]
+            line_name = meta["line_name"]
+            color = meta["hex_color"]
+        else:
+            line_name = None
+            color = "#888888"
+
+        # Apply offset + styling
+        coords, color, order = apply_line_style_and_offset(
+            coords, line_name, color
+        )
+
+        segment["geometry"]["coordinates"] = coords
+        segment["properties"].update({
+            "line_name": line_name,
+            "color": color,
+            "order": order
+        })
+
+        features.append(segment)
+
+    # Ensure consistent draw order (same as rail-shapes)
+    features.sort(key=lambda f: -(f["properties"].get("order") or 0))
+
+    return jsonify({
+        "type": "FeatureCollection",
+        "features": features
+    })
 
 
 if __name__ == "__main__":
