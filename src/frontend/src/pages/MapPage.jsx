@@ -21,6 +21,14 @@ const indoorIcon = new L.Icon({
     popupAnchor: [1, -34],
     shadowSize: [41, 41],
 });
+const bookMarkedIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+});
 
 function MapPage() {
     const { settings } = useSettings();
@@ -30,7 +38,15 @@ function MapPage() {
     const [railLines, setRailLines] = useState([]);
     const [selectedOrigin, setSelectedOrigin] = useState("");
     const [selectedDestination, setSelectedDestination] = useState("");
-    const navigate = useNavigate();
+    const [bookMarkedStations, setBookMarkedStations] = useState(() => {
+        try {
+            const saved = localStorage.getItem("bookMarkedStations");
+            return saved ? JSON.parse(saved).map(String) : [];
+        } catch {
+            return [];
+        }
+    });
+    const navigate = useNavigate(); 
 
     useEffect(() => {
         fetch("http://127.0.0.1:5000/stations")
@@ -49,6 +65,13 @@ function MapPage() {
             .then((data) => setRailLines(data.features))
             .catch(() => setError("Could not load rail lines."));
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem(
+          "bookMarkedStations",
+          JSON.stringify(bookMarkedStations)
+        );
+    }, [bookMarkedStations]);
 
     const LINE_Z_ORDER = { Blue: 1, Red: 2, Orange: 3, Green: 4 };
     const sortedLines = [...railLines].sort(
@@ -90,6 +113,23 @@ function MapPage() {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    function toggleBookMark(station){
+        setBookMarkedStations((prev) => {
+            const id = String(station.stop_id);
+
+            const exists = prev.includes(id);
+
+            if(exists){
+                return prev.filter(s => s !== id);
+            } else{
+                return [...prev, id];
+            }
+        });
+    }
+
+    const isBookMarked = (station) =>
+        bookMarkedStations.includes(String(station.stop_id));
 
     const nearbyStations = userLocation
         ? stations.filter(
@@ -177,7 +217,9 @@ function MapPage() {
                                         key={station.stop_id}
                                         position={[station.lat, station.lng]}
                                         icon={
-                                            settings.highlightIndoorLobby && station.indoors === 1
+                                            isBookMarked(station)
+                                            ? bookMarkedIcon
+                                            : settings.highlightIndoorLobby && station.indoors === 1
                                                 ? indoorIcon
                                                 : new L.Icon.Default()
                                         }
@@ -211,6 +253,14 @@ function MapPage() {
                                                 onClick={() => setSelectedDestination(station.stop_name)}
                                             >
                                                 Set as Destination
+                                            </button>
+                                            <br />
+
+                                            <button onClick={() => toggleBookMark(station)}>
+                                                {isBookMarked(station)
+                                                    ? "★ Bookmarked" 
+                                                    : "☆ Bookmark"}
+                                                    
                                             </button>
                                         </Popup>
                                     </Marker>

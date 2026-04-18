@@ -161,7 +161,7 @@ def rail_shapes():
 
     features.sort(key=lambda f: -f["properties"]["order"])
     import json
-    return jsonify({"type": "FeatureCollection", "features": features})
+    return jsonify({"type": "FeatureCollection", "features": features}) 
 
 
 @app.route("/plan-iter3", methods=["POST"])
