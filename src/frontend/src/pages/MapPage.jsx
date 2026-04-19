@@ -1,7 +1,7 @@
 import { useSettings } from "../context/SettingsContext";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from "react-leaflet";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -30,6 +30,22 @@ const bookMarkedIcon = new L.Icon({
     shadowSize: [41, 41],
 });
 
+function MapController({ selectedStation }){
+    const map = useMap();
+
+    useEffect(() => {
+        if(!selectedStation) return;
+
+        map.flyTo(
+            [selectedStation.lat, selectedStation.lng],
+            15,
+            { duration: 1.2 }
+        );
+    }, [selectedStation, map])
+
+    return null;
+}
+
 function MapPage() {
     const { settings } = useSettings();
     const [stations, setStations] = useState([]);
@@ -46,6 +62,7 @@ function MapPage() {
             return [];
         }
     });
+    const [focusedStation, setFocusedStation] = useState(null);
     const navigate = useNavigate(); 
 
     useEffect(() => {
@@ -170,12 +187,13 @@ function MapPage() {
                         <button className="map-location-btn" onClick={locate}>
                             📍 My Location
                         </button>
-
                         <MapContainer
                             center={mapCenter}
                             zoom={12}
                             style={{ height: "100%", width: "100%" }}
                         >
+                            <MapController selectedStation={focusedStation} />
+
                             <TileLayer
                                 attribution="&copy; OpenStreetMap contributors"
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -287,6 +305,45 @@ function MapPage() {
                         >
                             Open Planner with Selection
                         </button>
+                    </div>
+
+                    <div className="bookmark-box">
+                        <h3>Saved Stations</h3>
+
+                        {bookMarkedStations.length === 0 ? (
+                            <p>No bookmarks yet</p>
+                        ) : (
+                            <ul style={{paddingLeft: "20px"}}>
+                                {bookMarkedStations.map((id) => {
+                                    const station = stations.find(s => String(s.stop_id) === String(id));
+
+                                    if (!station) return null;
+
+                                    return (
+                                        <li
+                                            key={id}
+                                            style={{
+                                                marginBottom: "10px",
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "center"
+                                            }}
+                                        >
+                                            <span>⭐ {station.stop_name}</span>
+
+                                            <button
+                                                className="menu-button"
+                                                style={{marginLeft: "10px", cursor: "pointer"}}
+                                                onClick={() => setFocusedStation(station)}
+                                            >
+                                                Go
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+
+                            </ul>
+                        )}
                     </div>
 
                     {userLocation && nearbyStations.length > 0 && (
