@@ -326,7 +326,8 @@ function MapPage() {
                                                 marginBottom: "10px",
                                                 display: "flex",
                                                 justifyContent: "space-between",
-                                                alignItems: "center"
+                                                alignItems: "center",
+                                                fontWeight: 'bold'
                                             }}
                                         >
                                             <span>⭐ {station.stop_name}</span>
