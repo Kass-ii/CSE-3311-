@@ -1,7 +1,10 @@
+Flask==3.1.2
+Flask-Cors==6.0.1
 GeoAlchemy2==0.18.1
 greenlet==3.3.1
 gtfsdb==0.6.0
 packaging==26.0
+pandas==2.3.3
 psycopg2-binary==2.9.11
 setuptools<81.0.0
 SQLAlchemy==2.0.46

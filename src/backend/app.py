@@ -1,18 +1,57 @@
 # This file is the Flask backend API for our ComfortRoute project.
 # Its job is to receive requests from the frontend (React), compute a route using GTFS data, and return the result as JSON.
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 
 from gtfs_parser import load_gtfs
 from routing import plan_backtrack_same_line
 import pandas as pd
+import sqlite3
+import os
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-CORS(app)
+
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "lax"
+app.config["SESSION_COOKIE_SECURE"] = False  # keep False for local development
+
+CORS(
+    app,
+    supports_credentials=True,
+    origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+)
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "users.db")
+
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_users_table():
+    conn = get_db_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 
 # Load GTFS once when server starts
 stops, routes, trips, stop_times, shapes = load_gtfs()
+init_users_table()
+
 # list of stop_ids corresponding to transit centers and indoor stations.
 indoorIDs = [33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257, 26691, 33229, 33241, 21030,
              33233, 33310, 33312, 33287, 29833, 33234, 33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227, 22748, 26420]
@@ -31,7 +70,7 @@ DART_LINE_KEYWORDS = {
 DART_LINE_OFFSETS = {
     "Green":     0,
     "Orange":    1,
-	"Red":       2,
+    "Red":       2,
     "Blue":      3,
     "Silver":    4,
     "TRE":       4,
@@ -43,6 +82,139 @@ OFFSET_STEP = 0.00015
 @app.route("/")
 def home():
     return jsonify({"message": "ComfortRoute backend is running"})
+
+
+@app.route("/auth/register", methods=["POST"])
+def register():
+    data = request.get_json()
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    confirm_password = data.get("confirmPassword") or ""
+
+    # Validation
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    if not password:
+        return jsonify({"error": "Password is required"}), 400
+
+    if password != confirm_password:
+        return jsonify({"error": "Passwords do not match"}), 400
+
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+    conn = get_db_connection()
+
+    # Check if user already exists
+    existing_user = conn.execute(
+        "SELECT id FROM users WHERE email = ?",
+        (email,)
+    ).fetchone()
+
+    if existing_user:
+        conn.close()
+        return jsonify({"error": "Email already registered"}), 409
+
+    # Hash password
+    password_hash = generate_password_hash(password)
+
+    # Insert user
+    cursor = conn.execute(
+        "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+        (email, password_hash)
+    )
+    conn.commit()
+
+    user_id = cursor.lastrowid
+    conn.close()
+
+    # Auto login after register
+    session.clear()
+    session["user_id"] = user_id
+
+    return jsonify({
+        "message": "Account created successfully",
+        "user": {
+            "id": user_id,
+            "email": email
+        }
+    }), 201
+
+
+@app.route("/auth/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    if not password:
+        return jsonify({"error": "Password is required"}), 400
+
+    conn = get_db_connection()
+
+    user = conn.execute(
+        "SELECT id, email, password_hash FROM users WHERE email = ?",
+        (email,)
+    ).fetchone()
+
+    conn.close()
+
+    if user is None:
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    if not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    session.clear()
+    session["user_id"] = user["id"]
+
+    return jsonify({
+        "message": "Login successful",
+        "user": {
+            "id": user["id"],
+            "email": user["email"]
+        }
+    }), 200
+
+
+@app.route("/auth/me", methods=["GET"])
+def get_current_user():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({"user": None}), 200
+
+    conn = get_db_connection()
+
+    user = conn.execute(
+        "SELECT id, email FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+
+    conn.close()
+
+    if user is None:
+        session.clear()
+        return jsonify({"user": None}), 200
+
+    return jsonify({
+        "user": {
+            "id": user["id"],
+            "email": user["email"]
+        }
+    }), 200
+
+
+@app.route("/auth/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logged out successfully"}), 200
 
 
 @app.route("/plan-iter1", methods=["POST"])
