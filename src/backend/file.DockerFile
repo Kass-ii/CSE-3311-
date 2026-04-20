@@ -11,4 +11,3 @@ RUN pip install --no-cache-dir flask flask-cors pandas
 EXPOSE 5000
 
 CMD ["python", "app.py"]
-
