@@ -1,11 +1,14 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { logoutUser } from "../api/auth";
 
 function AccountSettings() {
-    const navigate = useNavigate();
-
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        navigate("/");
+    const handleLogout = async () => {
+        try {
+            await logoutUser();
+            window.location.href = "/";
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     return (
