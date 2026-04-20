@@ -7,6 +7,7 @@ from flask_cors import CORS
 from gtfs_parser import load_gtfs
 from shape_utils import apply_line_style_and_offset, get_segment_geojson, DART_LINE_KEYWORDS
 from backtracking import plan_backtrack_same_line
+
 import pandas as pd
 
 app = Flask(__name__)
@@ -29,24 +30,28 @@ def home():
 @app.route("/plan-iter1", methods=["POST"])
 def plan_iter1():
     data = request.get_json()
+    print(data)
 
-    start_query = data.get("start_query", "").strip()
-    start_after = data.get("start_after", "").strip()
-    return_by = data.get("return_by", "").strip()
+    origin = data.get("origin", "").strip()
+    destination = data.get("destination", "").strip()
+    # start_after = data.get("start_after", "").strip()
+    import datetime
+    start_after = datetime.datetime.now().strftime("%H:%M:%S")
+    return_by = data.get("depart_time", "").strip()
 
-    if not start_query or not start_after or not return_by:
+    if not origin or not start_after or not return_by:
         return jsonify({"error": "Missing required fields"}), 400
-
-    result = plan_backtrack_same_line(
-        start_query=start_query,
-        start_after=start_after,
-        return_by=return_by,
-        stops=stops,
-        routes=routes,
-        trips=trips,
-        stop_times=stop_times
-    )
-	
+    if origin == destination:
+        result = plan_backtrack_same_line(
+            start_query='SMU/MOCKINGBIRD STATION',
+            start_after=start_after,
+            return_by='19:00:00',
+            stops=stops,
+            routes=routes,
+            trips=trips,
+            stop_times=stop_times
+        )
+    print(result)
     return jsonify(result)
 
 
@@ -167,23 +172,23 @@ def plan_iter3():
         "legs": [
             {
                 "from_stop_name": origin,
-				"from_stop_id": 123,
+                "from_stop_id": 123,
                 "to_stop": "Bell Station",
-				"to_stop_id": 124,
+                "to_stop_id": 124,
                 "depart_time": "10:00:00",
                 "arrive_time": "10:07:00",
                 "route_name": "TRE",
-				"route_id": 321
+                "route_id": 321
             },
             {
                 "from_stop_name": "Bell Station",
                 "from_stop_id": 124,
-				"to_stop_name": destination,
-				"to_stop_id": 123,
+                "to_stop_name": destination,
+                "to_stop_id": 123,
                 "depart_time": "10:10:00",
                 "arrive_time": "10:22:00",
                 "route_name": "DART Green",
-				"route_id": 321
+                "route_id": 321
             }
         ],
         "metrics": {
