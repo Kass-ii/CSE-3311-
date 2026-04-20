@@ -1,9 +1,9 @@
 from gtfs_parser import load_gtfs
-from routing import plan_backtrack_same_line
+from backtracking import plan_backtrack_same_line
 
 
 def main():
-    stops, routes, trips, stop_times = load_gtfs()
+    stops, routes, trips, stop_times, shapes = load_gtfs()
 
     start = input("Start station (type part of name): ").strip()
     start_after = input("Start after time (HH:MM:SS): ").strip()

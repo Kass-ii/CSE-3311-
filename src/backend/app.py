@@ -6,7 +6,7 @@ from flask_cors import CORS
 
 from gtfs_parser import load_gtfs
 from shape_utils import apply_line_style_and_offset, get_segment_geojson, DART_LINE_KEYWORDS
-from routing import plan_backtrack_same_line
+from backtracking import plan_backtrack_same_line
 import pandas as pd
 
 app = Flask(__name__)
@@ -80,8 +80,6 @@ def get_stations():
 
     return jsonify(stations_data)
 
-
-@app.route("/rail-shapes", methods=["GET"])
 @app.route("/rail-shapes", methods=["GET"])
 def rail_shapes():
     rail_routes = routes[routes["route_type"].isin([0, 1, 2])].copy()

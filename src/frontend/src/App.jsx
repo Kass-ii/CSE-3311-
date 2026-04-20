@@ -1,4 +1,3 @@
-// @jsx h
 import Settings from "./pages/Settings";
 import { SettingsProvider } from "./context/SettingsContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
