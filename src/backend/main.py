@@ -1,7 +1,6 @@
 from gtfs_parser import load_gtfs
 from backtracking import plan_backtrack_same_line
 
-
 def main():
     stops, routes, trips, stop_times = load_gtfs()
 
