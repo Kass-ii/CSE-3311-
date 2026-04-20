@@ -63,7 +63,7 @@ function Planner() {
 
     try {
       // Step 1: get the route plan
-      const planRes = await fetch("http://127.0.0.1:5000/plan-iter3", {
+      const planRes = await fetch("http://127.0.0.1:5000/plan-iter1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ origin, destination, depart_time: departTime, settings }),
