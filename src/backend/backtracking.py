@@ -407,3 +407,18 @@ def plan_backtrack_same_line(
         f"Backtracking depth: {best_plan['stop_distance']} stop(s)\n"
         f"Layover at destination: {seconds_to_time(best_plan['layover_secs'])}"
     )
+
+if __name__ == "__main__":
+	from gtfs_parser import load_gtfs
+	stops, routes, trips, stop_times, shapes = load_gtfs()
+	import datetime
+	start_after = datetime.datetime.now().strftime("%H:%M:%S")
+	plan_backtrack_same_line(
+            start_query='SMU/MOCKINGBIRD STATION',
+            start_after=start_after,
+            return_by='19:00:00',
+            stops=stops,
+            routes=routes,
+            trips=trips,
+            stop_times=stop_times
+        )
