@@ -591,6 +591,19 @@ a:hover {
   width: 100%;
 }
 
+.bookmark-box{
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.bookmark-box h3{
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: #1d4ed8;
+}
+
 .map-back-link {
   display: inline-block;
   font-weight: 600;
