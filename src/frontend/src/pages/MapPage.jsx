@@ -1,7 +1,7 @@
 import { useSettings } from "../context/SettingsContext";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMap } from "react-leaflet";
 import DartAlertsButton from "../components/DartAlertsButton";
 
 import L from "leaflet";
@@ -22,6 +22,30 @@ const indoorIcon = new L.Icon({
     popupAnchor: [1, -34],
     shadowSize: [41, 41],
 });
+const bookMarkedIcon = new L.Icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+});
+
+function MapController({ selectedStation }){
+    const map = useMap();
+
+    useEffect(() => {
+        if(!selectedStation) return;
+
+        map.flyTo(
+            [selectedStation.lat, selectedStation.lng],
+            15,
+            { duration: 1.2 }
+        );
+    }, [selectedStation, map])
+
+    return null;
+}
 
 function MapPage() {
     const { settings } = useSettings();
@@ -32,6 +56,15 @@ function MapPage() {
     const [selectedOrigin, setSelectedOrigin] = useState("");
     const [selectedDestination, setSelectedDestination] = useState("");
     const navigate = useNavigate();
+    const [focusedStation, setFocusedStation] = useState(null);
+    const [bookMarkedStations, setBookMarkedStations] = useState(() => {
+        try {
+            const saved = localStorage.getItem("bookMarkedStations");
+            return saved ? JSON.parse(saved).map(String) : [];
+        } catch {
+            return [];
+        }
+    });
 
     useEffect(() => {
         fetch("http://127.0.0.1:5000/stations")
@@ -50,6 +83,13 @@ function MapPage() {
             .then((data) => setRailLines(data.features))
             .catch(() => setError("Could not load rail lines."));
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem(
+            "bookMarkedStations",
+            JSON.stringify(bookMarkedStations)
+        );
+    }, [bookMarkedStations]);
 
     const LINE_RENDER_ORDER = { Green: 0, Orange: 1, Red: 2, Blue: 3, Silver: 4, TRE: 5, Streetcar: 6 };
 	const sortedLines = [...railLines].sort(
@@ -91,6 +131,23 @@ function MapPage() {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    function toggleBookMark(station){
+        setBookMarkedStations((prev) => {
+            const id = String(station.stop_id);
+
+            const exists = prev.includes(id);
+
+            if(exists){
+                return prev.filter(s => s !== id);
+            } else{
+                return [...prev, id];
+            }
+        });
+    }
+
+    const isBookMarked = (station) =>
+        bookMarkedStations.includes(String(station.stop_id));
 
     const nearbyStations = userLocation
         ? stations.filter(
@@ -146,6 +203,8 @@ function MapPage() {
                             zoom={12}
                             style={{ height: "100%", width: "100%" }}
                         >
+                            <MapController selectedStation={focusedStation} />
+
                             <TileLayer
                                 attribution="&copy; OpenStreetMap contributors"
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -187,7 +246,9 @@ function MapPage() {
                                         key={station.stop_id}
                                         position={[station.lat, station.lng]}
                                         icon={
-                                            settings.highlightIndoorLobby && station.indoors === 1
+                                            isBookMarked(station)
+                                            ? bookMarkedIcon
+                                            : settings.highlightIndoorLobby && station.indoors === 1
                                                 ? indoorIcon
                                                 : new L.Icon.Default()
                                         }
@@ -222,6 +283,15 @@ function MapPage() {
                                             >
                                                 Set as Destination
                                             </button>
+
+                                            <br />
+
+                                            <button onClick={() => toggleBookMark(station)}>
+                                                {isBookMarked(station)
+                                                    ? "★ Bookmarked" 
+                                                    : "☆ Bookmark"}
+                                                    
+                                            </button>
                                         </Popup>
                                     </Marker>
                                 );
@@ -247,6 +317,46 @@ function MapPage() {
                         >
                             Open Planner with Selection
                         </button>
+                    </div>
+
+                                        <div className="bookmark-box">
+                        <h3>Saved Stations</h3>
+
+                        {bookMarkedStations.length === 0 ? (
+                            <p>No bookmarks yet</p>
+                        ) : (
+                            <ul style={{paddingLeft: "20px"}}>
+                                {bookMarkedStations.map((id) => {
+                                    const station = stations.find(s => String(s.stop_id) === String(id));
+
+                                    if (!station) return null;
+
+                                    return (
+                                        <li
+                                            key={id}
+                                            style={{
+                                                marginBottom: "10px",
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            <span>⭐ {station.stop_name}</span>
+
+                                            <button
+                                                className="menu-button"
+                                                style={{marginLeft: "10px", cursor: "pointer"}}
+                                                onClick={() => setFocusedStation(station)}
+                                            >
+                                                Go
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+
+                            </ul>
+                        )}
                     </div>
 
                     {userLocation && nearbyStations.length > 0 && (
