@@ -603,3 +603,37 @@ a:hover {
     grid-template-rows: 1fr auto;
   }
 }
+
+.typeahead-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  max-height: 220px;
+  overflow-y: auto;
+
+  z-index: 50;
+}
+
+.typeahead-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.typeahead-item:last-child {
+  border-bottom: none;
+}
+
+.typeahead-item:hover {
+  background: rgba(0, 120, 255, 0.08);
+}
