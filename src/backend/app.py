@@ -1,11 +1,11 @@
 # This file is the Flask backend API for our ComfortRoute project.
 # Its job is to receive requests from the frontend (React), compute a route using GTFS data, and return the result as JSON.
-
 from flask import Flask, request, jsonify, session, Response
 from flask_cors import CORS
 
 from gtfs_parser import load_gtfs
-from backtracking import plan_backtrack_same_line
+from backtracking import plan_backtrack_same_line, find_multiple_backtrack_options
+
 import pandas as pd
 import sqlite3
 import os
@@ -53,46 +53,62 @@ stops, routes, trips, stop_times, shapes = load_gtfs()
 init_users_table()
 
 # list of stop_ids corresponding to transit centers and indoor stations.
-indoorIDs = [33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257, 26691, 33229, 33241, 21030,
-             33233, 33310, 33312, 33287, 29833, 33234, 33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227, 22748, 26420]
-# Rendering information for route shape file
-DART_LINE_ORDER = ["Green", "Orange", "Red",
-                   "Blue", "Silver", "TRE", "Streetcar"]
+indoorIDs = [
+    33245, 33596, 33224, 26673, 30488, 33262, 33242, 33318, 33318, 33257,
+    26691, 33229, 33241, 21030, 33233, 33310, 33312, 33287, 29833, 33234,
+    33243, 23320, 26897, 33276, 33228, 33221, 15913, 33227, 22748, 26420
+]
+
+DART_LINE_ORDER = ["Green", "Orange", "Red", "Blue", "Silver", "TRE", "Streetcar"]
 DART_LINE_KEYWORDS = {
-    "Green":     ["green line"],
-    "Orange":    ["orange line"],
-    "Red":       ["red line"],
-    "Blue":      ["blue line"],
-    "Silver":    ["silver line", "silver"],
-    "TRE":       ["trinity railway", "tre"],
+    "Green": ["green line"],
+    "Orange": ["orange line"],
+    "Red": ["red line"],
+    "Blue": ["blue line"],
+    "Silver": ["silver line", "silver"],
+    "TRE": ["trinity railway", "tre"],
     "Streetcar": ["streetcar", "dallas street"],
 }
 DART_LINE_OFFSETS = {
-    "Green":     0,
-    "Orange":    1,
-    "Red":       2,
-    "Blue":      3,
-    "Silver":    4,
-    "TRE":       4,
+    "Green": 0,
+    "Orange": 1,
+    "Red": 2,
+    "Blue": 3,
+    "Silver": 4,
+    "TRE": 4,
     "Streetcar": 4,
 }
 OFFSET_STEP = 0.00015
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
-    return jsonify({"message": "ComfortRoute backend is running"})
+    return jsonify({
+        "message": "ComfortRoute backend is running",
+        "environment": os.getenv("APP_ENV", "development")
+    })
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "gtfs_loaded": True,
+        "stops_count": len(stops),
+        "routes_count": len(routes),
+        "trips_count": len(trips),
+        "stop_times_count": len(stop_times)
+    })
 
 
 @app.route("/auth/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     confirm_password = data.get("confirmPassword") or ""
 
-    # Validation
     if not email:
         return jsonify({"error": "Email is required"}), 400
 
@@ -107,7 +123,6 @@ def register():
 
     conn = get_db_connection()
 
-    # Check if user already exists
     existing_user = conn.execute(
         "SELECT id FROM users WHERE email = ?",
         (email,)
@@ -117,10 +132,8 @@ def register():
         conn.close()
         return jsonify({"error": "Email already registered"}), 409
 
-    # Hash password
     password_hash = generate_password_hash(password)
 
-    # Insert user
     cursor = conn.execute(
         "INSERT INTO users (email, password_hash) VALUES (?, ?)",
         (email, password_hash)
@@ -130,7 +143,6 @@ def register():
     user_id = cursor.lastrowid
     conn.close()
 
-    # Auto login after register
     session.clear()
     session["user_id"] = user_id
 
@@ -145,7 +157,7 @@ def register():
 
 @app.route("/auth/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -219,7 +231,10 @@ def logout():
 
 @app.route("/plan-iter1", methods=["POST"])
 def plan_iter1():
-    data = request.get_json()
+    """
+    Compatibility route: still returns the single best text plan + structured best option.
+    """
+    data = request.get_json() or {}
 
     start_query = data.get("start_query", "").strip()
     start_after = data.get("start_after", "").strip()
@@ -228,7 +243,7 @@ def plan_iter1():
     if not start_query or not start_after or not return_by:
         return jsonify({"error": "Missing required fields"}), 400
 
-    result = plan_backtrack_same_line(
+    text_result = plan_backtrack_same_line(
         start_query=start_query,
         start_after=start_after,
         return_by=return_by,
@@ -238,22 +253,77 @@ def plan_iter1():
         stop_times=stop_times
     )
 
+    options_result = find_multiple_backtrack_options(
+        start_query=start_query,
+        start_after=start_after,
+        return_by=return_by,
+        stops=stops,
+        routes=routes,
+        trips=trips,
+        stop_times=stop_times,
+        limit=1
+    )
+
+    if "error" in options_result:
+        return jsonify({"error": options_result["error"], "result": text_result}), 400
+
+    return jsonify({
+        "result": text_result,
+        "best_option": options_result["options"][0]
+    })
+
+
+@app.route("/plan-options", methods=["POST"])
+def plan_options():
+    """
+    New route for multiple trip options to compare.
+    Body:
+    {
+      "start_query": "Addison",
+      "start_after": "09:00:00",
+      "return_by": "13:00:00",
+      "limit": 5
+    }
+    """
+    data = request.get_json() or {}
+
+    start_query = data.get("start_query", "").strip()
+    start_after = data.get("start_after", "").strip()
+    return_by = data.get("return_by", "").strip()
+    limit = int(data.get("limit", 5))
+
+    if not start_query or not start_after or not return_by:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    limit = max(1, min(limit, 10))
+
+    result = find_multiple_backtrack_options(
+        start_query=start_query,
+        start_after=start_after,
+        return_by=return_by,
+        stops=stops,
+        routes=routes,
+        trips=trips,
+        stop_times=stop_times,
+        limit=limit
+    )
+
+    if "error" in result:
+        return jsonify(result), 400
+
     return jsonify(result)
+
 
 @app.route("/stations", methods=["GET"])
 def get_stations():
-    # Get stop_ids that are served by rail routes (route_type 0 = light rail, 2 = commuter rail)
     rail_route_ids = routes[routes["route_type"].isin([0, 2])]["route_id"]
     rail_trip_ids = trips[trips["route_id"].isin(rail_route_ids)]["trip_id"]
-    rail_stop_ids = stop_times[stop_times["trip_id"].isin(
-        rail_trip_ids)]["stop_id"].unique()
+    rail_stop_ids = stop_times[stop_times["trip_id"].isin(rail_trip_ids)]["stop_id"].unique()
 
     station_rows = stops.copy()
-    station_rows = station_rows[["stop_id",
-                                 "stop_name", "stop_lat", "stop_lon"]].dropna()
+    station_rows = station_rows[["stop_id", "stop_name", "stop_lat", "stop_lon"]].dropna()
     station_rows = station_rows[station_rows["stop_id"].isin(rail_stop_ids)]
-    station_rows = station_rows.drop_duplicates(
-        subset=["stop_name", "stop_lat", "stop_lon"])
+    station_rows = station_rows.drop_duplicates(subset=["stop_name", "stop_lat", "stop_lon"])
     station_rows["indoors"] = station_rows["stop_id"].astype(str).isin(
         [str(sid) for sid in indoorIDs]
     ).astype(int)
@@ -286,10 +356,8 @@ def rail_shapes():
 
     rail_routes["line_name"] = rail_routes.apply(get_line_name, axis=1)
     rail_routes = rail_routes.dropna(subset=["line_name"])
-    # Use the color directly from GTFS, ensure it has a # prefix
     rail_routes["hex_color"] = rail_routes["route_color"].apply(
-        lambda c: f"#{c}" if pd.notna(c) and not str(
-            c).startswith("#") else str(c)
+        lambda c: f"#{c}" if pd.notna(c) and not str(c).startswith("#") else str(c)
     )
 
     shape_to_line = (
@@ -298,6 +366,7 @@ def rail_shapes():
         [["shape_id", "line_name", "hex_color"]]
         .drop_duplicates()
     )
+
     shapes_sorted = shapes.sort_values(["shape_id", "shape_pt_sequence"])
 
     features = []
@@ -305,12 +374,11 @@ def rail_shapes():
         shape_id = row["shape_id"]
         line_name = row["line_name"]
         offset_index = DART_LINE_ORDER.index(line_name)
-        offset = (DART_LINE_OFFSETS[line_name] - 1.5) * OFFSET_STEP
 
         pts = shapes_sorted[shapes_sorted["shape_id"] == shape_id][
             ["shape_pt_lon", "shape_pt_lat"]
         ].values.tolist()
-        print(pts[:3])  # Should look like [[-96.xxx, 32.xxx], ...]
+
         if len(pts) < 2:
             continue
 
@@ -331,13 +399,12 @@ def rail_shapes():
         })
 
     features.sort(key=lambda f: -f["properties"]["order"])
-    import json
     return jsonify({"type": "FeatureCollection", "features": features})
 
 
 @app.route("/plan-iter3", methods=["POST"])
 def plan_iter3():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     origin = data.get("origin", "").strip()
     destination = data.get("destination", "").strip()
@@ -375,12 +442,13 @@ def plan_iter3():
 
     return jsonify(result)
 
-@app.route("/dart-alerts")
+
+@app.route("/dart-alerts", methods=["GET"])
 def dart_alerts():
-    
     with open("../data/alerts.xml", "r") as alerts:
         data = alerts.read()
     return Response(data, mimetype="application/xml")
 
+
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)
