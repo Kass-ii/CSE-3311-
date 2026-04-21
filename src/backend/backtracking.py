@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 import pandas as pd
 
@@ -70,7 +70,9 @@ def find_matching_stops(stops: pd.DataFrame, query: str) -> List[StopMatch]:
     if not q:
         return []
 
-    matches = stops[stops["stop_name"].astype(str).str.lower().str.contains(q, na=False)].copy()
+    matches = stops[
+        stops["stop_name"].astype(str).str.lower().str.contains(q, na=False)
+    ].copy()
 
     result: List[StopMatch] = []
     for _, row in matches.iterrows():
@@ -102,9 +104,29 @@ def choose_best_stop_match(matches: List[StopMatch], query: str) -> Optional[Sto
 
 def prepare_stop_times(stop_times: pd.DataFrame) -> pd.DataFrame:
     df = stop_times.copy()
+
+    df["trip_id"] = df["trip_id"].astype(str)
+    df["stop_id"] = df["stop_id"].astype(str)
+    df["stop_sequence"] = df["stop_sequence"].astype(int)
+
     df["arrival_secs"] = df["arrival_time"].apply(time_to_seconds)
     df["departure_secs"] = df["departure_time"].apply(time_to_seconds)
+
     return df
+
+
+def prepare_trips(trips: pd.DataFrame) -> pd.DataFrame:
+    df = trips.copy()
+    df["trip_id"] = df["trip_id"].astype(str)
+    df["route_id"] = df["route_id"].astype(str)
+    return df
+
+
+def build_trip_to_rows(stop_times: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+    trip_to_rows: Dict[str, pd.DataFrame] = {}
+    for trip_id, group in stop_times.groupby("trip_id", sort=False):
+        trip_to_rows[str(trip_id)] = group.sort_values("stop_sequence").copy()
+    return trip_to_rows
 
 
 def get_start_trip_rows(
@@ -113,8 +135,10 @@ def get_start_trip_rows(
     start_stop_id: str,
     start_after_secs: int
 ) -> pd.DataFrame:
+    start_stop_id = str(start_stop_id)
+
     start_rows = stop_times[
-        (stop_times["stop_id"].astype(str) == str(start_stop_id)) &
+        (stop_times["stop_id"] == start_stop_id) &
         (stop_times["departure_secs"] >= start_after_secs)
     ].copy()
 
@@ -133,7 +157,8 @@ def build_outbound_candidates(
     start_rows: pd.DataFrame,
     stop_times: pd.DataFrame,
     stops: pd.DataFrame,
-    routes: pd.DataFrame
+    routes: pd.DataFrame,
+    trip_to_rows: Dict[str, pd.DataFrame]
 ) -> List[OutboundCandidate]:
     stop_name_map: Dict[str, str] = {
         _safe_str(row["stop_id"]): _safe_str(row["stop_name"])
@@ -153,8 +178,9 @@ def build_outbound_candidates(
         start_sequence = int(start_row["stop_sequence"])
         depart_time = int(start_row["departure_secs"])
 
-        trip_stop_rows = stop_times[stop_times["trip_id"].astype(str) == trip_id].copy()
-        trip_stop_rows = trip_stop_rows.sort_values("stop_sequence")
+        trip_stop_rows = trip_to_rows.get(trip_id)
+        if trip_stop_rows is None or trip_stop_rows.empty:
+            continue
 
         downstream_rows = trip_stop_rows[trip_stop_rows["stop_sequence"] > start_sequence]
 
@@ -187,53 +213,68 @@ def build_outbound_candidates(
 
 def find_return_candidate(
     outbound: OutboundCandidate,
-    stop_times: pd.DataFrame,
     trips: pd.DataFrame,
-    return_by_secs: int
+    return_by_secs: int,
+    trip_to_rows: Dict[str, pd.DataFrame]
 ) -> Optional[ReturnCandidate]:
-    route_trips = trips[trips["route_id"].astype(str) == outbound.route_id].copy()
-    if route_trips.empty:
-        return None
+    route_trip_ids = trips.loc[
+        trips["route_id"] == str(outbound.route_id),
+        "trip_id"
+    ].unique()
 
-    route_trip_ids = set(route_trips["trip_id"].astype(str))
-
-    dest_rows = stop_times[
-        (stop_times["trip_id"].astype(str).isin(route_trip_ids)) &
-        (stop_times["stop_id"].astype(str) == outbound.dest_stop_id) &
-        (stop_times["departure_secs"] >= outbound.arrive_dest_time)
-    ].copy()
-
-    if dest_rows.empty:
+    if len(route_trip_ids) == 0:
         return None
 
     best_return: Optional[ReturnCandidate] = None
 
-    for _, dest_row in dest_rows.iterrows():
-        trip_id = _safe_str(dest_row["trip_id"])
-        dest_sequence = int(dest_row["stop_sequence"])
-        depart_dest_time = int(dest_row["departure_secs"])
+    dest_stop_id = str(outbound.dest_stop_id)
+    start_stop_id = str(outbound.start_stop_id)
 
-        same_trip_rows = stop_times[stop_times["trip_id"].astype(str) == trip_id].copy()
-        same_trip_rows = same_trip_rows.sort_values("stop_sequence")
+    for trip_id in route_trip_ids:
+        trip_id = str(trip_id)
 
-        possible_start_rows = same_trip_rows[
-            (same_trip_rows["stop_id"].astype(str) == outbound.start_stop_id) &
-            (same_trip_rows["stop_sequence"] > dest_sequence) &
-            (same_trip_rows["arrival_secs"] <= return_by_secs)
-        ].copy()
-
-        if possible_start_rows.empty:
+        if trip_id == str(outbound.outbound_trip_id):
             continue
 
-        earliest_valid = possible_start_rows.sort_values("arrival_secs").iloc[0]
-        return_candidate = ReturnCandidate(
-            return_trip_id=trip_id,
-            depart_dest_time=depart_dest_time,
-            arrive_start_time=int(earliest_valid["arrival_secs"])
-        )
+        same_trip_rows = trip_to_rows.get(trip_id)
+        if same_trip_rows is None or same_trip_rows.empty:
+            continue
 
-        if best_return is None or return_candidate.depart_dest_time > best_return.depart_dest_time:
-            best_return = return_candidate
+        possible_dest_rows = same_trip_rows[
+            (same_trip_rows["stop_id"] == dest_stop_id) &
+            (same_trip_rows["departure_secs"] >= outbound.arrive_dest_time) &
+            (same_trip_rows["departure_secs"] <= return_by_secs)
+        ].copy()
+
+        if possible_dest_rows.empty:
+            continue
+
+        for _, dest_row in possible_dest_rows.iterrows():
+            dest_sequence = int(dest_row["stop_sequence"])
+            depart_dest_time = int(dest_row["departure_secs"])
+
+            possible_start_rows = same_trip_rows[
+                (same_trip_rows["stop_id"] == start_stop_id) &
+                (same_trip_rows["stop_sequence"] > dest_sequence) &
+                (same_trip_rows["arrival_secs"] <= return_by_secs)
+            ].copy()
+
+            if possible_start_rows.empty:
+                continue
+
+            earliest_valid = possible_start_rows.sort_values("arrival_secs").iloc[0]
+
+            return_candidate = ReturnCandidate(
+                return_trip_id=trip_id,
+                depart_dest_time=depart_dest_time,
+                arrive_start_time=int(earliest_valid["arrival_secs"])
+            )
+
+            if (
+                best_return is None or
+                return_candidate.depart_dest_time > best_return.depart_dest_time
+            ):
+                best_return = return_candidate
 
     return best_return
 
@@ -294,6 +335,8 @@ def find_multiple_backtrack_options(
         return {"error": "Return-by time must be later than start-after time."}
 
     stop_times_prepped = prepare_stop_times(stop_times)
+    trips_prepped = prepare_trips(trips)
+    trip_to_rows = build_trip_to_rows(stop_times_prepped)
 
     stop_matches = find_matching_stops(stops, start_query)
     if not stop_matches:
@@ -303,9 +346,11 @@ def find_multiple_backtrack_options(
     if start_stop is None:
         return {"error": f'No usable stop found matching "{start_query}".'}
 
+    print(f"[DEBUG] selected start stop: {start_stop.stop_name} ({start_stop.stop_id})")
+
     start_rows = get_start_trip_rows(
         stop_times=stop_times_prepped,
-        trips=trips,
+        trips=trips_prepped,
         start_stop_id=start_stop.stop_id,
         start_after_secs=start_after_secs
     )
@@ -315,11 +360,14 @@ def find_multiple_backtrack_options(
             "error": f'No trips leave from "{start_stop.stop_name}" after {start_after}.'
         }
 
+    print(f"[DEBUG] candidate start rows: {len(start_rows)}")
+
     outbound_candidates = build_outbound_candidates(
         start_rows=start_rows,
         stop_times=stop_times_prepped,
         stops=stops,
-        routes=routes
+        routes=routes,
+        trip_to_rows=trip_to_rows
     )
 
     if not outbound_candidates:
@@ -327,15 +375,20 @@ def find_multiple_backtrack_options(
             "error": f'No downstream stops found from "{start_stop.stop_name}" after {start_after}.'
         }
 
+    print(f"[DEBUG] outbound candidates: {len(outbound_candidates)}")
+
     valid_plans: List[Dict[str, Any]] = []
     seen = set()
 
-    for outbound in outbound_candidates:
+    for i, outbound in enumerate(outbound_candidates, start=1):
+        if i % 250 == 0:
+            print(f"[DEBUG] processed {i}/{len(outbound_candidates)} outbound candidates")
+
         ret = find_return_candidate(
             outbound=outbound,
-            stop_times=stop_times_prepped,
-            trips=trips,
-            return_by_secs=return_by_secs
+            trips=trips_prepped,
+            return_by_secs=return_by_secs,
+            trip_to_rows=trip_to_rows
         )
         if ret is None:
             continue
@@ -426,3 +479,22 @@ def plan_backtrack_same_line(
         f"Backtracking depth: {best['backtracking_depth']} stop(s)\n"
         f"Layover at destination: {best['layover_minutes']} minute(s)"
     )
+
+
+if __name__ == "__main__":
+    from gtfs_parser import load_gtfs
+    import datetime
+
+    stops, routes, trips, stop_times, shapes = load_gtfs()
+    start_after = datetime.datetime.now().strftime("%H:%M:%S")
+
+    result = plan_backtrack_same_line(
+        start_query="SMU/MOCKINGBIRD STATION",
+        start_after=start_after,
+        return_by="23:00:00",
+        stops=stops,
+        routes=routes,
+        trips=trips,
+        stop_times=stop_times
+    )
+    print(result)
