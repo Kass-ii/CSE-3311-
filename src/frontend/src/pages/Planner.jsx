@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import "../App.css";
 import { useSettings } from "../context/SettingsContext";
+import DartAlertsButton from "../components/DartAlertsButton";
 
 function Planner() {
   const [searchParams] = useSearchParams();
@@ -149,7 +150,7 @@ function Planner() {
             <h1>ComfortRoute</h1>
             <p>Find optimized transit routes with comfort scoring.</p>
           </div>
-
+		  <DartAlertsButton />
           <form className="trip-form" onSubmit={handleSubmit}>
 
             {/* ORIGIN */}

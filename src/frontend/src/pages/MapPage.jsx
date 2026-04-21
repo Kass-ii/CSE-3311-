@@ -2,6 +2,7 @@ import { useSettings } from "../context/SettingsContext";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline } from "react-leaflet";
+import DartAlertsButton from "../components/DartAlertsButton";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -126,10 +127,19 @@ function MapPage() {
                     {error && <div className="error-box">{error}</div>}
 
                     <div className="map-wrapper">
+                        {/* Wrapper for the buttons to keep them together */}
+                        {/* <div className="map-controls">
+                            <button className="map-location-btn" onClick={locate}>
+                                📍 My Location
+                            </button>
+                            <DartAlertsButton className="map-location-btn" />
+                        </div> */}
 
-                        <button className="map-location-btn" onClick={locate}>
-                            📍 My Location
-                        </button>
+						<button className="map-location-btn gps-pos" onClick={locate}>
+							📍 My Location
+						</button>
+
+						<DartAlertsButton className="map-location-btn alerts-pos" />
 
                         <MapContainer
                             center={mapCenter}
