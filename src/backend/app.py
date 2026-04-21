@@ -1,7 +1,7 @@
 # This file is the Flask backend API for our ComfortRoute project.
 # Its job is to receive requests from the frontend (React), compute a route using GTFS data, and return the result as JSON.
 
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, Response
 from flask_cors import CORS
 
 from gtfs_parser import load_gtfs
@@ -240,14 +240,6 @@ def plan_iter1():
 
     return jsonify(result)
 
-@app.route("/dart-alerts")
-def dart_alerts():
-    url = "https://news.google.com/rss/search?q=site:x.com/DARTAlerts+when:7d&hl=en-US&gl=US&ceid=US:en"
-
-    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-
-    return Response(r.content, mimetype="application/xml")
-
 @app.route("/stations", methods=["GET"])
 def get_stations():
     # Get stop_ids that are served by rail routes (route_type 0 = light rail, 2 = commuter rail)
@@ -383,6 +375,12 @@ def plan_iter3():
 
     return jsonify(result)
 
+@app.route("/dart-alerts")
+def dart_alerts():
+    
+    with open("../data/alerts.xml", "r") as alerts:
+        data = alerts.read()
+    return Response(data, mimetype="application/xml")
 
 if __name__ == "__main__":
     app.run(debug=False)

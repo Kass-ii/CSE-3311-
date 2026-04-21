@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
-const RSS_URL =
-  "https://news.google.com/rss/search?q=site:x.com/DARTAlerts+when:7d&hl=en-US&gl=US&ceid=US:en";
+const RSS_URL = "http://127.0.0.1:5000/dart-alerts";
+  
 
 function parseRSS(xmlString) {
   const parser = new DOMParser();
